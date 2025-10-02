@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Istra Watch</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <!-- Экран загрузки -->
+    <div id="loading-screen" class="screen active">
+        <div class="loader"></div>
+        <p>Загрузка...</p>
+    </div>
+
+    <!-- Экран для администратора: список сотрудников -->
+    <div id="admin-screen" class="screen">
+        <div class="header">
+            <h1>Сотрудники</h1>
+            <div class="date-picker">
+                <input type="date" id="date-input" />
+            </div>
+        </div>
+        
+        <div id="employees-list" class="employees-list"></div>
+    </div>
+
+    <!-- Экран для пользователя: главная -->
+    <div id="user-screen" class="screen">
+        <div class="user-header">
+            <div class="user-info">
+                <div id="user-avatar" class="user-avatar"></div>
+                <h2 id="user-name"></h2>
+            </div>
+        </div>
+        
+        <div class="actions">
+            <button id="arrival-btn" class="action-btn arrival">
+                ✅ Отметиться о приходе
+            </button>
+            <button id="departure-btn" class="action-btn departure">
+                🚪 Отметиться об уходе
+            </button>
+        </div>
+    </div>
+
+    <!-- Экран создания записи -->
+    <div id="record-screen" class="screen">
+        <div class="header">
+            <button id="back-btn" class="back-btn">← Назад</button>
+            <h1 id="record-title"></h1>
+        </div>
+        
+        <form id="record-form" class="record-form">
+            <div class="form-group">
+                <label>Геолокация</label>
+                <div id="location-info" class="location-info">
+                    <div class="loader small"></div>
+                    <span>Определение местоположения...</span>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Адрес</label>
+                <div id="address-info" class="address-info">
+                    Загрузка...
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="comment">Комментарий (необязательно)</label>
+                <textarea id="comment" rows="4" placeholder="Введите комментарий..."></textarea>
+            </div>
+            
+            <button type="submit" class="submit-btn">Сохранить</button>
+        </form>
+    </div>
+
+    <!-- Экран деталей записи -->
+    <div id="details-screen" class="screen">
+        <div class="header">
+            <button id="details-back-btn" class="back-btn">← Назад</button>
+            <h1>Детали записи</h1>
+        </div>
+        
+        <div id="record-details" class="record-details"></div>
+    </div>
+
+    <script src="/static/js/app.js?v=2"></script>
+</body>
+</html>
+

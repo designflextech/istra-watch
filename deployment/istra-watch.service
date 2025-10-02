@@ -1,0 +1,27 @@
+[Unit]
+Description=Istra Watch Telegram Bot
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/var/www/istra-watch
+Environment="PATH=/var/www/istra-watch/venv/bin"
+ExecStart=/var/www/istra-watch/venv/bin/python main.py
+Restart=always
+RestartSec=10
+
+# Логирование
+StandardOutput=append:/var/log/istra-watch/bot.log
+StandardError=append:/var/log/istra-watch/error.log
+
+# Безопасность
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/istra-watch
+
+[Install]
+WantedBy=multi-user.target
+
