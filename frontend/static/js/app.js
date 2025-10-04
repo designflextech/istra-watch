@@ -395,12 +395,22 @@ function showUserScreen() {
 
 // Инициализация карты пользователя
 let userMapInstance = null;
+let userMapPlacemark = null;
 function initUserMap() {
     const mapContainer = document.getElementById('user-map');
     
-    // Если карта уже инициализирована, не создаем новую
+    // Если карта уже существует, уничтожаем её перед пересозданием
     if (userMapInstance) {
-        return;
+        console.log('Уничтожаем старую карту');
+        try {
+            if (userMapInstance.destroy) {
+                userMapInstance.destroy();
+            }
+        } catch (e) {
+            console.error('Ошибка при уничтожении карты:', e);
+        }
+        userMapInstance = null;
+        userMapPlacemark = null;
     }
     
     // Проверяем, загружен ли API ключ
@@ -420,12 +430,81 @@ function initUserMap() {
     // Показываем индикатор загрузки
     mapContainer.innerHTML = '<div class="map-loader"><div class="loader small"></div><span>Загрузка карты...</span></div>';
     
-    // Получаем геолокацию пользователя
+    // Функция для создания карты с заданными координатами
+    const createMap = (userLat, userLon) => {
+        // Очищаем контейнер
+        mapContainer.innerHTML = '';
+        
+        // Инициализируем карту после загрузки API
+        ymaps.ready(() => {
+            try {
+                // Создаем карту с минимальным набором элементов управления
+                userMapInstance = new ymaps.Map('user-map', {
+                    center: [userLat, userLon],
+                    zoom: 16,
+                    // Доступные элементы управления:
+                    // 'zoomControl' - кнопки + и - для масштабирования
+                    // 'geolocationControl' - кнопка определения местоположения
+                    // 'typeSelector' - переключатель типа карты (схема/спутник)
+                    // 'fullscreenControl' - кнопка полноэкранного режима
+                    // 'routeButtonControl' - кнопка построения маршрута
+                    // 'trafficControl' - пробки
+                    // 'searchControl' - поиск
+                    // 'rulerControl' - линейка
+                    controls: ['zoomControl', 'geolocationControl']
+                });
+                
+                // Настраиваем положение элементов управления
+                // Опции: { left, right, top, bottom } - отступы в пикселях
+                userMapInstance.controls.get('zoomControl').options.set({
+                    position: { right: 10, top: 10 },
+                    size: 'small' // 'small', 'medium', 'large'
+                });
+                
+                userMapInstance.controls.get('geolocationControl').options.set({
+                    position: { right: 10, top: 80 }
+                });
+                
+                // Добавляем метку пользователя
+                userMapPlacemark = new ymaps.Placemark([userLat, userLon], {
+                    balloonContent: `<strong>${currentUser.name}</strong><br>Ваше местоположение`,
+                    iconCaption: currentUser.name
+                }, {
+                    preset: 'islands#blueCircleDotIcon',
+                    iconColor: '#3390ec'
+                });
+                
+                userMapInstance.geoObjects.add(userMapPlacemark);
+                
+                // Настройка поведения карты
+                userMapInstance.behaviors.disable('scrollZoom'); // Отключаем зум колесиком
+                // Другие доступные behaviors:
+                // 'drag' - перетаскивание карты
+                // 'dblClickZoom' - зум двойным кликом
+                // 'rightMouseButtonMagnifier' - лупа правой кнопкой
+                // 'multiTouch' - мультитач жесты
+                
+            } catch (error) {
+                console.error('Error initializing map:', error);
+                mapContainer.innerHTML = '<div class="map-loader"><span>Ошибка загрузки карты</span></div>';
+            }
+        });
+    };
+    
+    // Проверяем, есть ли уже сохраненная геолокация
+    if (currentLocation && currentLocation.latitude && currentLocation.longitude) {
+        console.log('Используем сохраненную геолокацию для карты:', currentLocation);
+        createMap(currentLocation.latitude, currentLocation.longitude);
+        return;
+    }
+    
+    // Получаем новую геолокацию, если её нет
     if (!navigator.geolocation) {
         mapContainer.innerHTML = '<div class="map-loader"><span>Геолокация не поддерживается</span></div>';
         return;
     }
     
+    console.log('Запрашиваем новую геолокацию для карты');
     navigator.geolocation.getCurrentPosition(
         (position) => {
             const userLat = position.coords.latitude;
@@ -438,63 +517,7 @@ function initUserMap() {
             };
             currentLocationTimestamp = Date.now(); // Сохраняем время получения
             
-            // Очищаем контейнер
-            mapContainer.innerHTML = '';
-            
-            // Инициализируем карту после загрузки API
-            ymaps.ready(() => {
-                try {
-                    // Создаем карту с минимальным набором элементов управления
-                    userMapInstance = new ymaps.Map('user-map', {
-                        center: [userLat, userLon],
-                        zoom: 16,
-                        // Доступные элементы управления:
-                        // 'zoomControl' - кнопки + и - для масштабирования
-                        // 'geolocationControl' - кнопка определения местоположения
-                        // 'typeSelector' - переключатель типа карты (схема/спутник)
-                        // 'fullscreenControl' - кнопка полноэкранного режима
-                        // 'routeButtonControl' - кнопка построения маршрута
-                        // 'trafficControl' - пробки
-                        // 'searchControl' - поиск
-                        // 'rulerControl' - линейка
-                        controls: ['zoomControl', 'geolocationControl']
-                    });
-                    
-                    // Настраиваем положение элементов управления
-                    // Опции: { left, right, top, bottom } - отступы в пикселях
-                    userMapInstance.controls.get('zoomControl').options.set({
-                        position: { right: 10, top: 10 },
-                        size: 'small' // 'small', 'medium', 'large'
-                    });
-                    
-                    userMapInstance.controls.get('geolocationControl').options.set({
-                        position: { right: 10, top: 80 }
-                    });
-                    
-                    // Добавляем метку пользователя
-                    const userPlacemark = new ymaps.Placemark([userLat, userLon], {
-                        balloonContent: `<strong>${currentUser.name}</strong><br>Ваше местоположение`,
-                        iconCaption: currentUser.name
-                    }, {
-                        preset: 'islands#blueCircleDotIcon',
-                        iconColor: '#3390ec'
-                    });
-                    
-                    userMapInstance.geoObjects.add(userPlacemark);
-                    
-                    // Настройка поведения карты
-                    userMapInstance.behaviors.disable('scrollZoom'); // Отключаем зум колесиком
-                    // Другие доступные behaviors:
-                    // 'drag' - перетаскивание карты
-                    // 'dblClickZoom' - зум двойным кликом
-                    // 'rightMouseButtonMagnifier' - лупа правой кнопкой
-                    // 'multiTouch' - мультитач жесты
-                    
-                } catch (error) {
-                    console.error('Error initializing map:', error);
-                    mapContainer.innerHTML = '<div class="map-loader"><span>Ошибка загрузки карты</span></div>';
-                }
-            });
+            createMap(userLat, userLon);
         },
         (error) => {
             console.error('Geolocation error:', error);
