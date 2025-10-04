@@ -134,6 +134,34 @@ async def get_record_details(request: web.Request) -> web.Response:
     return web.json_response(record_details)
 
 
+async def get_address(request: web.Request) -> web.Response:
+    """
+    Получение адреса по координатам
+    
+    Args:
+        request: HTTP запрос
+        
+    Returns:
+        JSON ответ с адресом
+    """
+    try:
+        latitude = float(request.query.get('latitude'))
+        longitude = float(request.query.get('longitude'))
+    except (ValueError, TypeError):
+        raise ValueError('Неверные координаты')
+    
+    # Получаем адрес через Яндекс.Карты
+    from bot.services.yandex_maps import YandexMapsService
+    address_data = await YandexMapsService.get_address_by_coordinates(latitude, longitude)
+    
+    if not address_data:
+        return web.json_response({
+            'formatted_address': f'Координаты: {latitude:.6f}, {longitude:.6f}'
+        })
+    
+    return web.json_response(address_data)
+
+
 async def create_record(request: web.Request) -> web.Response:
     """
     Создание записи о приходе/уходе
@@ -187,4 +215,5 @@ def setup_routes(app: web.Application):
     app.router.add_get('/api/employees', get_employees_status)
     app.router.add_get('/api/records/{record_id}', get_record_details)
     app.router.add_post('/api/records', create_record)
+    app.router.add_get('/api/address', get_address)
 

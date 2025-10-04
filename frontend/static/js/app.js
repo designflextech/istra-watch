@@ -363,7 +363,7 @@ async function getLocation() {
         }
         
         navigator.geolocation.getCurrentPosition(
-            (position) => {
+            async (position) => {
                 currentLocation = {
                     latitude: position.coords.latitude,
                     longitude: position.coords.longitude
@@ -373,7 +373,26 @@ async function getLocation() {
                     <span>✅ Местоположение определено</span>
                 `;
                 
-                addressInfo.textContent = `${currentLocation.latitude.toFixed(6)}, ${currentLocation.longitude.toFixed(6)}`;
+                // Получаем адрес по координатам
+                addressInfo.innerHTML = '<div class="loader small"></div><span>Определение адреса...</span>';
+                
+                try {
+                    const response = await fetch(`${API_URL}/api/address?latitude=${currentLocation.latitude}&longitude=${currentLocation.longitude}`, {
+                        headers: {
+                            'Authorization': `tma ${initDataRaw}`
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const addressData = await response.json();
+                        addressInfo.textContent = addressData.formatted_address || `${currentLocation.latitude.toFixed(6)}, ${currentLocation.longitude.toFixed(6)}`;
+                    } else {
+                        addressInfo.textContent = `${currentLocation.latitude.toFixed(6)}, ${currentLocation.longitude.toFixed(6)}`;
+                    }
+                } catch (error) {
+                    console.error('Ошибка получения адреса:', error);
+                    addressInfo.textContent = `${currentLocation.latitude.toFixed(6)}, ${currentLocation.longitude.toFixed(6)}`;
+                }
             },
             (error) => {
                 locationInfo.innerHTML = `
