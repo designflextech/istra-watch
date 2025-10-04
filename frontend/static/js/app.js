@@ -73,6 +73,7 @@ let currentUser = null;
 let isAdmin = false;
 let currentRecordType = null;
 let currentLocation = null;
+let currentLocationTimestamp = null; // Время получения геолокации
 let yandexMapsApiKey = null;
 let yandexMapsLoaded = false;
 
@@ -430,6 +431,13 @@ function initUserMap() {
             const userLat = position.coords.latitude;
             const userLon = position.coords.longitude;
             
+            // Сохраняем геолокацию глобально для переиспользования
+            currentLocation = {
+                latitude: userLat,
+                longitude: userLon
+            };
+            currentLocationTimestamp = Date.now(); // Сохраняем время получения
+            
             // Очищаем контейнер
             mapContainer.innerHTML = '';
             
@@ -514,6 +522,24 @@ async function showRecordScreen(recordType) {
     await getLocation();
 }
 
+// Проверка актуальности геолокации
+function isLocationStale() {
+    if (!currentLocation || !currentLocationTimestamp) {
+        return true; // Геолокации нет, нужно получить
+    }
+    
+    const now = Date.now();
+    const ageMinutes = (now - currentLocationTimestamp) / 1000 / 60;
+    
+    // Рандомный интервал от 5 до 15 минут (10 ± 5)
+    // Генерируем один раз при проверке для текущей сессии
+    const expirationMinutes = 10 + (Math.random() * 10 - 5); // от 5 до 15 минут
+    
+    console.log(`Возраст геолокации: ${ageMinutes.toFixed(1)} мин, истекает через: ${expirationMinutes.toFixed(1)} мин`);
+    
+    return ageMinutes > expirationMinutes;
+}
+
 // Получение геолокации
 async function getLocation() {
     const locationInfo = document.getElementById('location-info');
@@ -524,12 +550,47 @@ async function getLocation() {
             throw new Error('Геолокация не поддерживается');
         }
         
+        // Проверяем, есть ли актуальная сохраненная геолокация
+        if (currentLocation && !isLocationStale()) {
+            console.log('Используем сохраненную геолокацию:', currentLocation);
+            
+            locationInfo.innerHTML = `
+                <span>✅ Местоположение определено</span>
+            `;
+            
+            // Получаем адрес по координатам
+            addressInfo.innerHTML = '<div class="loader small"></div><span>Определение адреса...</span>';
+            
+            try {
+                const response = await fetch(`${API_URL}/api/address?latitude=${currentLocation.latitude}&longitude=${currentLocation.longitude}`, {
+                    headers: {
+                        'Authorization': `tma ${initDataRaw}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const addressData = await response.json();
+                    addressInfo.textContent = addressData.formatted_address || `${currentLocation.latitude.toFixed(6)}, ${currentLocation.longitude.toFixed(6)}`;
+                } else {
+                    addressInfo.textContent = `${currentLocation.latitude.toFixed(6)}, ${currentLocation.longitude.toFixed(6)}`;
+                }
+            } catch (error) {
+                console.error('Ошибка получения адреса:', error);
+                addressInfo.textContent = `${currentLocation.latitude.toFixed(6)}, ${currentLocation.longitude.toFixed(6)}`;
+            }
+            
+            return; // Выходим, не запрашивая геолокацию повторно
+        }
+        
+        // Геолокация устарела или её нет, запрашиваем новую
+        console.log('Запрос новой геолокации (устарела или отсутствует)');
         navigator.geolocation.getCurrentPosition(
             async (position) => {
                 currentLocation = {
                     latitude: position.coords.latitude,
                     longitude: position.coords.longitude
                 };
+                currentLocationTimestamp = Date.now(); // Обновляем timestamp
                 
                 locationInfo.innerHTML = `
                     <span>✅ Местоположение определено</span>
