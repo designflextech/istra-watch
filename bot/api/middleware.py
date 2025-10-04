@@ -158,6 +158,11 @@ async def telegram_auth_middleware(request: web.Request, handler):
     if not request.path.startswith('/api/'):
         return await handler(request)
     
+    # Пропускаем публичные endpoints, которые не требуют аутентификации
+    public_endpoints = ['/api/config']
+    if request.path in public_endpoints:
+        return await handler(request)
+    
     # Получаем заголовок Authorization
     auth_header = request.headers.get('Authorization', '')
     

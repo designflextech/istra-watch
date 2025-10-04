@@ -73,6 +73,8 @@ let currentUser = null;
 let isAdmin = false;
 let currentRecordType = null;
 let currentLocation = null;
+let yandexMapsApiKey = null;
+let yandexMapsLoaded = false;
 
 // Элементы DOM
 const loadingScreen = document.getElementById('loading-screen');
@@ -80,6 +82,52 @@ const adminScreen = document.getElementById('admin-screen');
 const userScreen = document.getElementById('user-screen');
 const recordScreen = document.getElementById('record-screen');
 const detailsScreen = document.getElementById('details-screen');
+
+// Загрузка конфигурации
+async function loadConfig() {
+    try {
+        const response = await fetch(`${API_URL}/api/config`, {
+            headers: {
+                'Authorization': `tma ${initDataRaw}`
+            }
+        });
+        if (response.ok) {
+            const config = await response.json();
+            yandexMapsApiKey = config.yandex_maps_api_key;
+            
+            // Динамически загружаем Яндекс.Карты API
+            if (yandexMapsApiKey) {
+                await loadYandexMapsAPI();
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load config:', error);
+    }
+}
+
+// Динамическая загрузка Яндекс.Карты API
+function loadYandexMapsAPI() {
+    return new Promise((resolve, reject) => {
+        if (yandexMapsLoaded || typeof ymaps !== 'undefined') {
+            yandexMapsLoaded = true;
+            resolve();
+            return;
+        }
+        
+        const script = document.createElement('script');
+        script.src = `https://api-maps.yandex.ru/2.1/?apikey=${yandexMapsApiKey}&lang=ru_RU`;
+        script.type = 'text/javascript';
+        script.onload = () => {
+            yandexMapsLoaded = true;
+            resolve();
+        };
+        script.onerror = () => {
+            console.error('Failed to load Yandex Maps API');
+            reject();
+        };
+        document.head.appendChild(script);
+    });
+}
 
 // Инициализация приложения
 async function initApp() {
@@ -136,6 +184,9 @@ async function initApp() {
         console.log('=== Show Screen ===');
         console.log('isAdmin:', isAdmin);
         console.log('currentUser:', currentUser);
+        
+        // Загружаем конфигурацию (включая API ключ Яндекс.Карт) ПОСЛЕ аутентификации
+        await loadConfig();
         
         // Показываем соответствующий экран
         if (isAdmin) {
@@ -333,9 +384,120 @@ function showUserScreen() {
         userAvatar.textContent = currentUser.name.charAt(0);
     }
     
+    // Инициализируем карту
+    initUserMap();
+    
     // Обработчики кнопок
     document.getElementById('arrival-btn').onclick = () => showRecordScreen('arrival');
     document.getElementById('departure-btn').onclick = () => showRecordScreen('departure');
+}
+
+// Инициализация карты пользователя
+let userMapInstance = null;
+function initUserMap() {
+    const mapContainer = document.getElementById('user-map');
+    
+    // Если карта уже инициализирована, не создаем новую
+    if (userMapInstance) {
+        return;
+    }
+    
+    // Проверяем, загружен ли API ключ
+    if (!yandexMapsApiKey) {
+        mapContainer.innerHTML = '<div class="map-loader"><span>API ключ Яндекс.Карт не настроен</span></div>';
+        console.error('Yandex Maps API key not configured');
+        return;
+    }
+    
+    // Проверяем доступность Yandex Maps API
+    if (!yandexMapsLoaded || typeof ymaps === 'undefined') {
+        mapContainer.innerHTML = '<div class="map-loader"><span>Яндекс Карты недоступны</span></div>';
+        console.error('Yandex Maps API not loaded');
+        return;
+    }
+    
+    // Показываем индикатор загрузки
+    mapContainer.innerHTML = '<div class="map-loader"><div class="loader small"></div><span>Загрузка карты...</span></div>';
+    
+    // Получаем геолокацию пользователя
+    if (!navigator.geolocation) {
+        mapContainer.innerHTML = '<div class="map-loader"><span>Геолокация не поддерживается</span></div>';
+        return;
+    }
+    
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const userLat = position.coords.latitude;
+            const userLon = position.coords.longitude;
+            
+            // Очищаем контейнер
+            mapContainer.innerHTML = '';
+            
+            // Инициализируем карту после загрузки API
+            ymaps.ready(() => {
+                try {
+                    // Создаем карту с минимальным набором элементов управления
+                    userMapInstance = new ymaps.Map('user-map', {
+                        center: [userLat, userLon],
+                        zoom: 16,
+                        // Доступные элементы управления:
+                        // 'zoomControl' - кнопки + и - для масштабирования
+                        // 'geolocationControl' - кнопка определения местоположения
+                        // 'typeSelector' - переключатель типа карты (схема/спутник)
+                        // 'fullscreenControl' - кнопка полноэкранного режима
+                        // 'routeButtonControl' - кнопка построения маршрута
+                        // 'trafficControl' - пробки
+                        // 'searchControl' - поиск
+                        // 'rulerControl' - линейка
+                        controls: ['zoomControl', 'geolocationControl']
+                    });
+                    
+                    // Настраиваем положение элементов управления
+                    // Опции: { left, right, top, bottom } - отступы в пикселях
+                    userMapInstance.controls.get('zoomControl').options.set({
+                        position: { right: 10, top: 10 },
+                        size: 'small' // 'small', 'medium', 'large'
+                    });
+                    
+                    userMapInstance.controls.get('geolocationControl').options.set({
+                        position: { right: 10, top: 80 }
+                    });
+                    
+                    // Добавляем метку пользователя
+                    const userPlacemark = new ymaps.Placemark([userLat, userLon], {
+                        balloonContent: `<strong>${currentUser.name}</strong><br>Ваше местоположение`,
+                        iconCaption: currentUser.name
+                    }, {
+                        preset: 'islands#blueCircleDotIcon',
+                        iconColor: '#3390ec'
+                    });
+                    
+                    userMapInstance.geoObjects.add(userPlacemark);
+                    
+                    // Настройка поведения карты
+                    userMapInstance.behaviors.disable('scrollZoom'); // Отключаем зум колесиком
+                    // Другие доступные behaviors:
+                    // 'drag' - перетаскивание карты
+                    // 'dblClickZoom' - зум двойным кликом
+                    // 'rightMouseButtonMagnifier' - лупа правой кнопкой
+                    // 'multiTouch' - мультитач жесты
+                    
+                } catch (error) {
+                    console.error('Error initializing map:', error);
+                    mapContainer.innerHTML = '<div class="map-loader"><span>Ошибка загрузки карты</span></div>';
+                }
+            });
+        },
+        (error) => {
+            console.error('Geolocation error:', error);
+            mapContainer.innerHTML = '<div class="map-loader"><span>Не удалось определить местоположение</span></div>';
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+    );
 }
 
 // Экран создания записи

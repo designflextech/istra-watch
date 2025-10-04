@@ -3,7 +3,7 @@ import json
 import logging
 from datetime import datetime, date, timedelta
 from aiohttp import web
-from bot.config import is_admin
+from bot.config import is_admin, YANDEX_MAPS_API_KEY
 from bot.services.user_service import UserService
 from bot.services.record_service import RecordService
 from bot.models.record import Record
@@ -204,6 +204,21 @@ async def create_record(request: web.Request) -> web.Response:
     })
 
 
+async def get_config(request: web.Request) -> web.Response:
+    """
+    Получение конфигурации для фронтенда
+    
+    Args:
+        request: HTTP запрос
+        
+    Returns:
+        JSON ответ с конфигурацией
+    """
+    return web.json_response({
+        'yandex_maps_api_key': YANDEX_MAPS_API_KEY or ''
+    })
+
+
 def setup_routes(app: web.Application):
     """
     Настройка маршрутов API
@@ -216,4 +231,5 @@ def setup_routes(app: web.Application):
     app.router.add_get('/api/records/{record_id}', get_record_details)
     app.router.add_post('/api/records', create_record)
     app.router.add_get('/api/address', get_address)
+    app.router.add_get('/api/config', get_config)
 
