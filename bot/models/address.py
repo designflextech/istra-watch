@@ -44,7 +44,7 @@ class Address:
             'city': self.city,
             'street': self.street,
             'building': self.building,
-            'created_at': self.created_at
+            'created_at': self.created_at.isoformat() if hasattr(self.created_at, 'isoformat') else str(self.created_at) if self.created_at else None
         }
     
     @staticmethod

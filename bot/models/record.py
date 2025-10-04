@@ -48,7 +48,7 @@ class Record:
             'latitude': self.latitude,
             'longitude': self.longitude,
             'address_id': self.address_id,
-            'created_at': self.created_at
+            'created_at': self.created_at.isoformat() if hasattr(self.created_at, 'isoformat') else str(self.created_at) if self.created_at else None
         }
     
     @staticmethod

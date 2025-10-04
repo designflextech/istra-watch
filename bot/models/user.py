@@ -40,8 +40,8 @@ class User:
             'telegram_id': self.telegram_id,
             'name': self.name,
             'phone': self.phone,
-            'created_at': self.created_at,
-            'updated_at': self.updated_at
+            'created_at': self.created_at.isoformat() if hasattr(self.created_at, 'isoformat') else str(self.created_at) if self.created_at else None,
+            'updated_at': self.updated_at.isoformat() if hasattr(self.updated_at, 'isoformat') else str(self.updated_at) if self.updated_at else None
         }
     
     @staticmethod
