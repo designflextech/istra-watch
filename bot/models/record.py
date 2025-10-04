@@ -236,8 +236,8 @@ class Record:
                         'telegram_handle': row['user_telegram_handle'],
                         'telegram_id': row['user_telegram_id'],
                         'phone': row['user_phone'],
-                        'created_at': row['user_created_at'],
-                        'updated_at': row['user_updated_at']
+                        'created_at': row['user_created_at'].isoformat() if row['user_created_at'] else None,
+                        'updated_at': row['user_updated_at'].isoformat() if row['user_updated_at'] else None
                     }
                     
                     record_data = None
@@ -245,7 +245,7 @@ class Record:
                         record_data = {
                             'id': row['record_id'],
                             'type': row['record_type'],
-                            'timestamp': row['timestamp'],
+                            'timestamp': row['timestamp'].isoformat() if row['timestamp'] else None,
                             'comment': row['comment'],
                             'address': row['formatted_address'] if row['formatted_address'] else None
                         }
@@ -323,7 +323,7 @@ class Record:
                     'latitude': result['record_latitude'],
                     'longitude': result['record_longitude'],
                     'address_id': result['address_id'],
-                    'created_at': result['record_created_at']
+                    'created_at': result['record_created_at'].isoformat() if result['record_created_at'] else None
                 }
                 
                 user_data = None
@@ -335,8 +335,8 @@ class Record:
                         'telegram_handle': result['user_telegram_handle'],
                         'telegram_id': result['user_telegram_id'],
                         'phone': result['user_phone'],
-                        'created_at': result['user_created_at'],
-                        'updated_at': result['user_updated_at']
+                        'created_at': result['user_created_at'].isoformat() if result['user_created_at'] else None,
+                        'updated_at': result['user_updated_at'].isoformat() if result['user_updated_at'] else None
                     }
                 
                 address_data = None
@@ -350,7 +350,7 @@ class Record:
                         'city': result['city'],
                         'street': result['street'],
                         'building': result['building'],
-                        'created_at': result['address_created_at']
+                        'created_at': result['address_created_at'].isoformat() if result['address_created_at'] else None
                     }
                 
                 return {
@@ -418,7 +418,7 @@ class Record:
                         'latitude': row['record_latitude'],
                         'longitude': row['record_longitude'],
                         'address_id': row['address_id'],
-                        'created_at': row['record_created_at']
+                        'created_at': row['record_created_at'].isoformat() if row['record_created_at'] else None
                     }
                     
                     address_data = None
@@ -432,7 +432,7 @@ class Record:
                             'city': row['city'],
                             'street': row['street'],
                             'building': row['building'],
-                            'created_at': row['address_created_at']
+                            'created_at': row['address_created_at'].isoformat() if row['address_created_at'] else None
                         }
                     
                     output.append({

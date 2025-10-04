@@ -4,6 +4,7 @@ import time
 from collections import defaultdict
 from typing import Dict, Tuple
 from aiohttp import web
+from bot.utils.telegram_auth import validate_telegram_webapp_data
 
 logger = logging.getLogger(__name__)
 
@@ -148,6 +149,58 @@ async def error_handling_middleware(request: web.Request, handler):
 
 
 @web.middleware
+async def telegram_auth_middleware(request: web.Request, handler):
+    """
+    Middleware для аутентификации через Telegram Mini App
+    Извлекает и валидирует init data из заголовка Authorization
+    """
+    # Пропускаем для статических файлов и не-API роутов
+    if not request.path.startswith('/api/'):
+        return await handler(request)
+    
+    # Получаем заголовок Authorization
+    auth_header = request.headers.get('Authorization', '')
+    
+    logger.info(f"Auth header present: {bool(auth_header)}, starts with 'tma ': {auth_header.startswith('tma ')}")
+    
+    # Проверяем формат: "tma <initDataRaw>"
+    if auth_header.startswith('tma '):
+        init_data_raw = auth_header[4:]  # Убираем префикс "tma "
+        
+        logger.info(f"Init data raw length: {len(init_data_raw)}")
+        logger.info(f"Init data raw: {init_data_raw[:100]}..." if len(init_data_raw) > 100 else f"Init data raw: {init_data_raw}")
+        
+        # Валидируем init data
+        is_valid, parsed_data = validate_telegram_webapp_data(init_data_raw)
+        
+        logger.info(f"Validation result: is_valid={is_valid}, has_parsed_data={parsed_data is not None}")
+        if parsed_data:
+            logger.info(f"Parsed data keys: {list(parsed_data.keys())}")
+        
+        if is_valid and parsed_data:
+            # Сохраняем валидированные данные в request для использования в handlers
+            request['init_data'] = parsed_data
+            request['init_data_raw'] = init_data_raw
+            logger.info(f"Init data validated for user: {parsed_data.get('user', 'unknown')}")
+        else:
+            # Данные невалидны - отклоняем запрос
+            logger.warning(f"Invalid init data from IP: {request.remote}")
+            return web.json_response(
+                {'error': 'Invalid or expired authentication data'},
+                status=401
+            )
+    else:
+        # Нет заголовка Authorization или неверный формат
+        logger.warning(f"Missing Authorization header for {request.path} from IP: {request.remote}")
+        return web.json_response(
+            {'error': 'Authorization required'},
+            status=401
+        )
+    
+    return await handler(request)
+
+
+@web.middleware
 async def logging_middleware(request: web.Request, handler):
     """
     Middleware для логирования запросов
@@ -190,7 +243,8 @@ def setup_middlewares(app: web.Application):
     # Порядок важен! Middleware применяются в обратном порядке
     app.middlewares.append(error_handling_middleware)  # Внешний слой
     app.middlewares.append(rate_limit_middleware)
+    app.middlewares.append(telegram_auth_middleware)  # Аутентификация Telegram
     app.middlewares.append(logging_middleware)  # Внутренний слой
     
-    logger.info("Middlewares configured: error_handling, rate_limit, logging")
+    logger.info("Middlewares configured: error_handling, rate_limit, telegram_auth, logging")
 

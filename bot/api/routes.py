@@ -7,7 +7,6 @@ from bot.config import is_admin
 from bot.services.user_service import UserService
 from bot.services.record_service import RecordService
 from bot.models.record import Record
-from bot.utils.telegram_auth import validate_telegram_webapp_data
 
 logger = logging.getLogger(__name__)
 
@@ -17,27 +16,38 @@ async def auth_user(request: web.Request) -> web.Response:
     Аутентификация пользователя через Telegram WebApp
     
     Args:
-        request: HTTP запрос
+        request: HTTP запрос с валидированными init_data из middleware
         
     Returns:
         JSON ответ с данными пользователя
     """
-    data = await request.json()
+    # Init data уже валидированы в middleware и доступны в request
+    init_data = request.get('init_data')
     
-    # Валидация Telegram WebApp данных
-    init_data = data.get('init_data')
-    if init_data:
-        if not validate_telegram_webapp_data(init_data):
-            logger.warning(f"Invalid Telegram WebApp data from IP: {request.remote}")
-            return web.json_response(
-                {'error': 'Неверные данные аутентификации'},
-                status=401
-            )
-    else:
-        # Режим разработки: если init_data отсутствует, выводим предупреждение
-        logger.warning(f"DEV MODE: Authentication without init_data from IP: {request.remote}")
+    if not init_data:
+        return web.json_response(
+            {'error': 'Неверные данные аутентификации'},
+            status=401
+        )
     
-    telegram_id = data.get('telegram_id')
+    # Извлекаем user data из валидированных init_data
+    user_data_str = init_data.get('user')
+    if not user_data_str:
+        return web.json_response(
+            {'error': 'Отсутствуют данные пользователя'},
+            status=401
+        )
+    
+    # Парсим JSON с данными пользователя
+    try:
+        user_data = json.loads(user_data_str)
+        telegram_id = user_data.get('id')
+    except json.JSONDecodeError:
+        logger.error(f"Failed to parse user data from init_data: {user_data_str}")
+        return web.json_response(
+            {'error': 'Некорректные данные пользователя'},
+            status=401
+        )
     
     if not telegram_id:
         raise ValueError('telegram_id обязателен')

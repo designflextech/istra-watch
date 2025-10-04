@@ -1,8 +1,71 @@
-// Инициализация Telegram WebApp
-const tg = window.Telegram.WebApp;
-tg.expand();
+// Инициализация Telegram Mini App SDK
+console.log('=== Telegram SDK Initialization ===');
+console.log('window.telegramApps:', window.telegramApps);
+console.log('window.Telegram:', window.Telegram);
+console.log('window.Telegram?.WebApp:', window.Telegram?.WebApp);
 
-// API URL (замените на ваш URL)
+let initDataRaw = '';
+let initDataParsed = null;
+
+// Используем официальный Telegram Web App API (наиболее надежный)
+if (window.Telegram?.WebApp) {
+    const tg = window.Telegram.WebApp;
+    console.log('Using Telegram WebApp API');
+    console.log('Telegram WebApp:', tg);
+    console.log('Platform:', tg.platform);
+    console.log('Version:', tg.version);
+    
+    tg.ready();
+    tg.expand();
+    
+    initDataRaw = tg.initData || '';
+    initDataParsed = tg.initDataUnsafe || null;
+    
+    console.log('initDataRaw length:', initDataRaw.length);
+    console.log('initDataRaw:', initDataRaw);
+    console.log('initDataParsed:', initDataParsed);
+    
+    // Применяем цветовую схему
+    if (tg.themeParams) {
+        document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color || '#ffffff');
+        document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color || '#000000');
+        document.documentElement.style.setProperty('--tg-theme-hint-color', tg.themeParams.hint_color || '#999999');
+        document.documentElement.style.setProperty('--tg-theme-link-color', tg.themeParams.link_color || '#2481cc');
+        document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color || '#2481cc');
+        document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color || '#ffffff');
+    }
+} else if (window.telegramApps && window.telegramApps.init) {
+    // SDK v3 - используем новый API (если доступен)
+    const sdk = window.telegramApps;
+    console.log('Using Telegram Apps SDK v3');
+    
+    sdk.init();
+    
+    const { miniApp, viewport, initData } = sdk;
+    
+    if (miniApp && miniApp.mount) {
+        miniApp.mount();
+        miniApp.ready();
+    }
+    
+    if (viewport && viewport.mount) {
+        viewport.mount();
+        viewport.expand();
+    }
+    
+    if (initData && initData.mount) {
+        initData.mount();
+        initDataRaw = initData.raw ? initData.raw() : '';
+        initDataParsed = initData.state ? initData.state() : null;
+    }
+    
+    console.log('initDataRaw:', initDataRaw);
+    console.log('initDataParsed:', initDataParsed);
+} else {
+    console.error('❌ Telegram SDK not found - app must be opened in Telegram');
+}
+
+// API URL
 const API_URL = window.location.origin;
 
 // Глобальные переменные
@@ -19,27 +82,49 @@ const recordScreen = document.getElementById('record-screen');
 const detailsScreen = document.getElementById('details-screen');
 
 // Инициализация приложения
-async function init() {
+async function initApp() {
     try {
-        const telegramUser = tg.initDataUnsafe?.user;
+        console.log('=== App Initialization ===');
+        console.log('initDataRaw:', initDataRaw);
+        console.log('initDataParsed:', initDataParsed);
         
-        if (!telegramUser) {
-            showError('Ошибка получения данных пользователя');
+        const telegramUser = initDataParsed?.user;
+        console.log('telegramUser:', telegramUser);
+        
+        if (!telegramUser || !initDataRaw) {
+            const errorDetails = [];
+            if (!telegramUser) errorDetails.push('Отсутствуют данные пользователя Telegram');
+            if (!initDataRaw) errorDetails.push('Отсутствует initDataRaw');
+            
+            console.error('Initialization failed:', errorDetails);
+            showError('Ошибка получения данных пользователя.<br><br>Детали:<br>' + errorDetails.join('<br>') + '<br><br>Приложение должно быть открыто в Telegram.');
             return;
         }
         
-        // Аутентификация
+        // Аутентификация с отправкой initDataRaw в заголовке Authorization
+        console.log('=== Authentication Request ===');
+        console.log('API_URL:', API_URL);
+        console.log('initDataRaw length:', initDataRaw.length);
+        console.log('initDataRaw:', initDataRaw);
+        console.log('telegram_id:', telegramUser.id);
+        
         const response = await fetch(`${API_URL}/api/auth`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `tma ${initDataRaw}`
+            },
             body: JSON.stringify({ 
-                telegram_id: telegramUser.id,
-                init_data: tg.initData  // Отправляем init_data для валидации
+                telegram_id: telegramUser.id
             })
         });
         
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Array.from(response.headers.entries()));
+        
         if (!response.ok) {
             const error = await response.json();
+            console.error('Authentication error:', error);
             showError(error.error || 'Ошибка аутентификации');
             return;
         }
@@ -48,10 +133,16 @@ async function init() {
         isAdmin = data.is_admin;
         currentUser = data.user;
         
+        console.log('=== Show Screen ===');
+        console.log('isAdmin:', isAdmin);
+        console.log('currentUser:', currentUser);
+        
         // Показываем соответствующий экран
         if (isAdmin) {
+            console.log('Calling showAdminScreen()');
             showAdminScreen();
         } else {
+            console.log('Calling showUserScreen()');
             showUserScreen();
         }
         
@@ -63,12 +154,20 @@ async function init() {
 
 // Экран администратора
 function showAdminScreen() {
+    console.log('=== showAdminScreen called ===');
+    console.log('adminScreen element:', adminScreen);
+    
     hideAllScreens();
     adminScreen.classList.add('active');
+    
+    console.log('adminScreen classes:', adminScreen.className);
+    console.log('All screens:', document.querySelectorAll('.screen'));
     
     // Устанавливаем сегодняшнюю дату
     const dateInput = document.getElementById('date-input');
     dateInput.value = new Date().toISOString().split('T')[0];
+    
+    console.log('Date input value:', dateInput.value);
     
     // Загружаем список сотрудников
     loadEmployees();
@@ -86,8 +185,20 @@ async function loadEmployees() {
     employeesList.innerHTML = '<div class="loader"></div>';
     
     try {
-        const response = await fetch(`${API_URL}/api/employees?date=${date}`);
+        console.log('=== Loading Employees ===');
+        console.log('Date:', date);
+        
+        const response = await fetch(`${API_URL}/api/employees?date=${date}`, {
+            headers: {
+                'Authorization': `tma ${initDataRaw}`
+            }
+        });
+        
+        console.log('Response status:', response.status);
+        
         const data = await response.json();
+        console.log('Response data:', data);
+        console.log('Employees count:', data.employees?.length);
         
         if (!response.ok) {
             throw new Error(data.error || 'Ошибка загрузки данных');
@@ -96,15 +207,20 @@ async function loadEmployees() {
         renderEmployees(data.employees);
         
     } catch (error) {
+        console.error('Error loading employees:', error);
         employeesList.innerHTML = `<div class="error-message">${error.message}</div>`;
     }
 }
 
 // Отрисовка списка сотрудников
 function renderEmployees(employees) {
+    console.log('=== Rendering Employees ===');
+    console.log('Employees:', employees);
+    
     const employeesList = document.getElementById('employees-list');
     
-    if (employees.length === 0) {
+    if (!employees || employees.length === 0) {
+        console.log('No employees to display');
         employeesList.innerHTML = '<p>Нет данных о сотрудниках</p>';
         return;
     }
@@ -148,7 +264,11 @@ async function showRecordDetails(recordId) {
     recordDetails.innerHTML = '<div class="loader"></div>';
     
     try {
-        const response = await fetch(`${API_URL}/api/records/${recordId}`);
+        const response = await fetch(`${API_URL}/api/records/${recordId}`, {
+            headers: {
+                'Authorization': `tma ${initDataRaw}`
+            }
+        });
         const data = await response.json();
         
         if (!response.ok) {
@@ -205,10 +325,10 @@ function showUserScreen() {
     
     userName.textContent = currentUser.name;
     
-    // Получаем аватар из Telegram
-    const telegramUser = tg.initDataUnsafe?.user;
-    if (telegramUser?.photo_url) {
-        userAvatar.innerHTML = `<img src="${telegramUser.photo_url}" alt="Avatar">`;
+    // Получаем аватар из Telegram (новый SDK использует photoUrl)
+    const telegramUser = initDataParsed?.user;
+    if (telegramUser?.photoUrl) {
+        userAvatar.innerHTML = `<img src="${telegramUser.photoUrl}" alt="Avatar">`;
     } else {
         userAvatar.textContent = currentUser.name.charAt(0);
     }
@@ -289,7 +409,10 @@ document.getElementById('record-form').addEventListener('submit', async (e) => {
         
         const response = await fetch(`${API_URL}/api/records`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `tma ${initDataRaw}`
+            },
             body: JSON.stringify({
                 user_id: currentUser.id,
                 type: currentRecordType,
@@ -306,9 +429,19 @@ document.getElementById('record-form').addEventListener('submit', async (e) => {
         }
         
         // Показываем успешное сообщение
-        tg.showAlert('Запись успешно сохранена!', () => {
+        if (window.Telegram?.WebApp?.showPopup) {
+            window.Telegram.WebApp.showPopup({
+                title: 'Успех',
+                message: 'Запись успешно сохранена!',
+                buttons: [{ id: 'ok', type: 'default', text: 'OK' }]
+            }, () => {
+                showUserScreen();
+            });
+        } else {
+            // Fallback на обычный alert
+            alert('Запись успешно сохранена!');
             showUserScreen();
-        });
+        }
         
     } catch (error) {
         alert(error.message);
@@ -336,5 +469,5 @@ function showError(message) {
 }
 
 // Запуск приложения
-init();
+initApp();
 

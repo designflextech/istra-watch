@@ -177,19 +177,34 @@ frontend/
 4. **Record Screen** - Форма создания записи
 5. **Details Screen** - Детали записи
 
-#### Взаимодействие с Telegram WebApp
+#### Взаимодействие с Telegram Mini App
 
 ```javascript
-const tg = window.Telegram.WebApp;
+// Инициализация SDK
+const { retrieveLaunchParams, miniApp, viewport } = window.telegramApps;
+const { initDataRaw, initData } = retrieveLaunchParams();
 
 // Расширение на весь экран
-tg.expand();
+if (viewport && viewport.expand) {
+    viewport.expand();
+}
 
 // Получение данных пользователя
-const user = tg.initDataUnsafe?.user;
+const user = initData?.user;
+
+// Показ popup
+if (miniApp && miniApp.showPopup) {
+    miniApp.showPopup({
+        title: 'Заголовок',
+        message: 'Сообщение',
+        buttons: [{ id: 'ok', type: 'default', text: 'OK' }]
+    });
+}
 
 // Закрытие приложения
-tg.close();
+if (miniApp && miniApp.close) {
+    miniApp.close();
+}
 ```
 
 ### Database Schema
