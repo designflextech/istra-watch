@@ -123,12 +123,25 @@ def fill_missing_records(start_date_str: str, end_date_str: str = None):
             departure_time = current_date.replace(hour=departure_hour, minute=departure_minute)
             
             try:
+                # Добавляем случайное смещение 5-10 метров (0.00009 градуса ≈ 10 метров)
+                # Для прихода
+                arrival_lat_offset = random.uniform(-0.0001, 0.0001)
+                arrival_lon_offset = random.uniform(-0.0001, 0.0001)
+                arrival_lat = office_address.latitude + arrival_lat_offset
+                arrival_lon = office_address.longitude + arrival_lon_offset
+                
+                # Для ухода (другие координаты)
+                departure_lat_offset = random.uniform(-0.0001, 0.0001)
+                departure_lon_offset = random.uniform(-0.0001, 0.0001)
+                departure_lat = office_address.latitude + departure_lat_offset
+                departure_lon = office_address.longitude + departure_lon_offset
+                
                 # Создаем запись о приходе
                 arrival_record = Record.create(
                     user_id=user.id,
                     record_type=Record.ARRIVAL,
-                    latitude=office_address.latitude,
-                    longitude=office_address.longitude,
+                    latitude=arrival_lat,
+                    longitude=arrival_lon,
                     address_id=office_address.id,
                     timestamp=arrival_time,
                     comment="Приход на работу"
@@ -138,8 +151,8 @@ def fill_missing_records(start_date_str: str, end_date_str: str = None):
                 departure_record = Record.create(
                     user_id=user.id,
                     record_type=Record.DEPARTURE,
-                    latitude=office_address.latitude,
-                    longitude=office_address.longitude,
+                    latitude=departure_lat,
+                    longitude=departure_lon,
                     address_id=office_address.id,
                     timestamp=departure_time,
                     comment="Уход с работы"
