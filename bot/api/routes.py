@@ -42,6 +42,7 @@ async def auth_user(request: web.Request) -> web.Response:
     try:
         user_data = json.loads(user_data_str)
         telegram_id = user_data.get('id')
+        photo_url = user_data.get('photo_url')  # URL аватарки из Telegram
     except json.JSONDecodeError:
         logger.error(f"Failed to parse user data from init_data: {user_data_str}")
         return web.json_response(
@@ -54,6 +55,14 @@ async def auth_user(request: web.Request) -> web.Response:
     
     # Получаем пользователя из БД
     user = UserService.get_user_by_telegram_id(telegram_id)
+    
+    # Обновляем URL аватарки, если пользователь существует и есть photo_url
+    if user and photo_url:
+        # Проверяем, изменился ли URL аватарки
+        if user.avatar_url != photo_url:
+            user.avatar_url = photo_url
+            user = user.update()
+            logger.info(f"Updated avatar_url for user {telegram_id}")
     
     # Проверяем, является ли пользователь администратором
     is_user_admin = is_admin(telegram_id)

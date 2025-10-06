@@ -14,6 +14,7 @@ class User:
         telegram_id: Optional[int] = None,
         name: Optional[str] = None,
         phone: Optional[str] = None,
+        avatar_url: Optional[str] = None,
         created_at: Optional[str] = None,
         updated_at: Optional[str] = None
     ):
@@ -23,6 +24,7 @@ class User:
         self.telegram_id = telegram_id
         self.name = name
         self.phone = phone
+        self.avatar_url = avatar_url
         self.created_at = created_at
         self.updated_at = updated_at
     
@@ -40,6 +42,7 @@ class User:
             'telegram_id': self.telegram_id,
             'name': self.name,
             'phone': self.phone,
+            'avatar_url': self.avatar_url,
             'created_at': self.created_at.isoformat() if hasattr(self.created_at, 'isoformat') else str(self.created_at) if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if hasattr(self.updated_at, 'isoformat') else str(self.updated_at) if self.updated_at else None
         }
@@ -50,7 +53,8 @@ class User:
         telegram_handle: str,
         email: Optional[str] = None,
         telegram_id: Optional[int] = None,
-        phone: Optional[str] = None
+        phone: Optional[str] = None,
+        avatar_url: Optional[str] = None
     ) -> 'User':
         """Создание нового пользователя"""
         with get_db_connection() as conn:
@@ -59,11 +63,11 @@ class User:
                 users_table = qualified_table_name('users')
                 cursor.execute(
                     f"""
-                    INSERT INTO {users_table} (name, telegram_handle, email, telegram_id, phone)
-                    VALUES (%s, %s, %s, %s, %s)
+                    INSERT INTO {users_table} (name, telegram_handle, email, telegram_id, phone, avatar_url)
+                    VALUES (%s, %s, %s, %s, %s, %s)
                     RETURNING *
                     """,
-                    (name, telegram_handle, email, telegram_id, phone)
+                    (name, telegram_handle, email, telegram_id, phone, avatar_url)
                 )
                 result = cursor.fetchone()
                 return User.from_dict(dict(result))
@@ -128,12 +132,12 @@ class User:
                     f"""
                     UPDATE {users_table} 
                     SET email = %s, telegram_handle = %s, telegram_id = %s, 
-                        name = %s, phone = %s, updated_at = NOW()
+                        name = %s, phone = %s, avatar_url = %s, updated_at = NOW()
                     WHERE id = %s
                     RETURNING *
                     """,
                     (self.email, self.telegram_handle, self.telegram_id, 
-                     self.name, self.phone, self.id)
+                     self.name, self.phone, self.avatar_url, self.id)
                 )
                 result = cursor.fetchone()
                 return User.from_dict(dict(result))
