@@ -507,7 +507,7 @@ function initUserMap() {
                 const iconOptions = createAvatarIcon(currentUser.avatar_url, currentUser.name);
                 userMapPlacemark = new ymaps.Placemark([userLat, userLon], {
                     balloonContent: `<strong>${currentUser.name}</strong><br>Ваше местоположение`,
-                    iconCaption: !currentUser.avatar_url ? currentUser.name : ''
+                    iconCaption: currentUser.name
                 }, iconOptions);
                 
                 userMapInstance.geoObjects.add(userMapPlacemark);
@@ -843,7 +843,7 @@ async function showMapScreen() {
                             ${loc.address || 'Адрес не определен'}<br>
                             <small>Отметка: ${new Date(loc.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</small>
                         `,
-                        iconCaption: !loc.user.avatar_url ? loc.user.name : ''
+                        iconCaption: loc.user.name
                     }, iconOptions);
                     
                     fullMapInstance.geoObjects.add(placemark);
