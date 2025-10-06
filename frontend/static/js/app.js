@@ -387,10 +387,11 @@ function showUserScreen() {
     
     userName.textContent = currentUser.name;
     
-    // Получаем аватар из Telegram (новый SDK использует photoUrl)
-    const telegramUser = initDataParsed?.user;
-    if (telegramUser?.photoUrl) {
-        userAvatar.innerHTML = `<img src="${telegramUser.photoUrl}" alt="Avatar">`;
+    // Получаем аватар - приоритет: avatar_url из БД, затем photoUrl из Telegram
+    const avatarUrl = currentUser.avatar_url || initDataParsed?.user?.photoUrl;
+    
+    if (avatarUrl) {
+        userAvatar.innerHTML = `<img src="${avatarUrl}" alt="Avatar" onerror="this.style.display='none'; this.parentElement.textContent='${currentUser.name.charAt(0)}'; this.parentElement.style.fontSize='32px';">`;
     } else {
         userAvatar.textContent = currentUser.name.charAt(0);
     }
@@ -406,29 +407,49 @@ function showUserScreen() {
 // Функция для создания кастомной иконки с аватаркой
 // Примечание: должна вызываться только после загрузки ymaps
 function createAvatarIcon(avatarUrl, userName) {
-    if (avatarUrl && typeof ymaps !== 'undefined') {
-        // Используем HTML-шаблон для круглой аватарки
-        const avatarLayout = ymaps.templateLayoutFactory.createClass(
-            '<div style="width: 40px; height: 40px; border-radius: 50%; overflow: hidden; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); background: #f0f0f0; cursor: pointer;">' +
-                '<img src="' + avatarUrl + '" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.parentElement.innerHTML=\'<div style=\\\'width:100%;height:100%;background:#3390ec;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:16px;\\\'>' + (userName ? userName.charAt(0).toUpperCase() : '?') + '</div>\'" />' +
-            '</div>'
-        );
-        
-        return {
-            iconLayout: avatarLayout,
-            iconShape: {
-                type: 'Circle',
-                coordinates: [20, 20],
-                radius: 20
-            }
-        };
-    } else {
-        // Фоллбэк на стандартную иконку с первой буквой имени
+    if (typeof ymaps === 'undefined') {
         return {
             preset: 'islands#blueCircleDotIcon',
             iconColor: '#3390ec'
         };
     }
+    
+    let iconHtml;
+    
+    if (avatarUrl) {
+        // HTML для аватарки с подписью снизу
+        iconHtml = '<div style="display: flex; flex-direction: column; align-items: center; cursor: pointer;">' +
+            '<div style="width: 40px; height: 40px; border-radius: 50%; overflow: hidden; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); background: #f0f0f0;">' +
+                '<img src="' + avatarUrl + '" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.parentElement.innerHTML=\'<div style=\\\'width:100%;height:100%;background:#3390ec;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:16px;\\\'>' + (userName ? userName.charAt(0).toUpperCase() : '?') + '</div>\'" />' +
+            '</div>' +
+            '<div style="margin-top: 4px; padding: 2px 6px; background: #fff; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); font-size: 12px; font-weight: 600; white-space: nowrap; color: #000;">' + 
+                (userName || 'Пользователь') + 
+            '</div>' +
+        '</div>';
+    } else {
+        // HTML для стандартной метки (кружок с буквой) с подписью снизу
+        iconHtml = '<div style="display: flex; flex-direction: column; align-items: center; cursor: pointer;">' +
+            '<div style="width: 40px; height: 40px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); background: #3390ec; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: bold; font-size: 16px;">' +
+                (userName ? userName.charAt(0).toUpperCase() : '?') +
+            '</div>' +
+            '<div style="margin-top: 4px; padding: 2px 6px; background: #fff; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); font-size: 12px; font-weight: 600; white-space: nowrap; color: #000;">' + 
+                (userName || 'Пользователь') + 
+            '</div>' +
+        '</div>';
+    }
+    
+    const iconLayout = ymaps.templateLayoutFactory.createClass(iconHtml);
+    
+    return {
+        iconLayout: iconLayout,
+        iconShape: {
+            type: 'Circle',
+            coordinates: [20, 20],
+            radius: 20
+        },
+        // Смещаем иконку так, чтобы центр был на точке координат
+        iconOffset: [-20, -25]
+    };
 }
 
 // Инициализация карты пользователя
@@ -506,8 +527,7 @@ function initUserMap() {
                 // Добавляем метку пользователя с аватаркой
                 const iconOptions = createAvatarIcon(currentUser.avatar_url, currentUser.name);
                 userMapPlacemark = new ymaps.Placemark([userLat, userLon], {
-                    balloonContent: `<strong>${currentUser.name}</strong><br>Ваше местоположение`,
-                    iconCaption: currentUser.name
+                    balloonContent: `<strong>${currentUser.name}</strong><br>Ваше местоположение`
                 }, iconOptions);
                 
                 userMapInstance.geoObjects.add(userMapPlacemark);
@@ -831,19 +851,12 @@ async function showMapScreen() {
                 locations.forEach(loc => {
                     const iconOptions = createAvatarIcon(loc.user.avatar_url, loc.user.name);
                     
-                    // Если используется стандартная иконка (нет аватарки), меняем цвет на зеленый
-                    if (!loc.user.avatar_url) {
-                        iconOptions.preset = 'islands#greenCircleDotIcon';
-                        iconOptions.iconColor = '#56ab2f';
-                    }
-                    
                     const placemark = new ymaps.Placemark([loc.latitude, loc.longitude], {
                         balloonContent: `
                             <strong>${loc.user.name}</strong><br>
                             ${loc.address || 'Адрес не определен'}<br>
                             <small>Отметка: ${new Date(loc.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</small>
-                        `,
-                        iconCaption: loc.user.name
+                        `
                     }, iconOptions);
                     
                     fullMapInstance.geoObjects.add(placemark);
