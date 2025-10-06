@@ -66,6 +66,31 @@ body {
     font-weight: 600;
 }
 
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.map-btn {
+    background: var(--tg-theme-button-color, #3390ec);
+    border: none;
+    border-radius: 12px;
+    padding: 8px 12px;
+    font-size: 20px;
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s;
+    line-height: 1;
+}
+
+.map-btn:active {
+    transform: scale(0.95);
+}
+
+.map-btn:hover {
+    opacity: 0.9;
+}
+
 .back-btn {
     background: none;
     border: none;
@@ -349,5 +374,15 @@ body {
     padding: 12px;
     border-radius: 12px;
     margin-bottom: 16px;
+}
+
+/* Map Screen */
+.full-map {
+    width: 100%;
+    height: 500px;
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    background: var(--tg-theme-secondary-bg-color, #f4f4f5);
 }
 

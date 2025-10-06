@@ -219,6 +219,53 @@ async def get_config(request: web.Request) -> web.Response:
     })
 
 
+async def get_current_locations(request: web.Request) -> web.Response:
+    """
+    Получение текущих местоположений сотрудников (тех, кто на работе)
+    
+    Args:
+        request: HTTP запрос
+        
+    Returns:
+        JSON ответ со списком сотрудников и их текущими местоположениями
+    """
+    # Получаем сегодняшние записи всех сотрудников
+    today = date.today()
+    employees_data = RecordService.get_records_by_date(today)
+    
+    logger.info(f"Total employees with records today: {len(employees_data)}")
+    
+    # Фильтруем тех, кто отметился сегодня (и приход, и уход)
+    # Не показываем только тех, кто вообще не делал записей
+    current_locations = []
+    for emp in employees_data:
+        record = emp.get('record')
+        user = emp.get('user')
+        
+        logger.info(f"User: {user.get('name') if user else 'None'}, Record type: {record.get('type') if record else 'None'}")
+        
+        # Проверяем что есть хоть какая-то запись (arrival или departure)
+        if record:
+            # Получаем координаты из последней записи
+            full_record = Record.get_by_id(record['id'])
+            if full_record and full_record.latitude and full_record.longitude:
+                current_locations.append({
+                    'user': user,
+                    'latitude': full_record.latitude,
+                    'longitude': full_record.longitude,
+                    'timestamp': record['timestamp'],
+                    'address': record.get('address'),
+                    'record_type': record.get('type')  # Добавляем тип записи для отображения
+                })
+                logger.info(f"Added location for user: {user.get('name')} (type: {record.get('type')})")
+    
+    logger.info(f"Total current locations: {len(current_locations)}")
+    
+    return web.json_response({
+        'locations': current_locations
+    })
+
+
 def setup_routes(app: web.Application):
     """
     Настройка маршрутов API
@@ -232,4 +279,5 @@ def setup_routes(app: web.Application):
     app.router.add_post('/api/records', create_record)
     app.router.add_get('/api/address', get_address)
     app.router.add_get('/api/config', get_config)
+    app.router.add_get('/api/current-locations', get_current_locations)
 

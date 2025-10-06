@@ -83,6 +83,7 @@ const adminScreen = document.getElementById('admin-screen');
 const userScreen = document.getElementById('user-screen');
 const recordScreen = document.getElementById('record-screen');
 const detailsScreen = document.getElementById('details-screen');
+const mapScreen = document.getElementById('map-screen');
 
 // Загрузка конфигурации
 async function loadConfig() {
@@ -226,6 +227,15 @@ function showAdminScreen() {
     
     // Слушаем изменение даты
     dateInput.addEventListener('change', loadEmployees);
+    
+    // Обработчик кнопки карты
+    const mapBtn = document.getElementById('map-btn');
+    if (mapBtn) {
+        // Удаляем старый обработчик, если есть
+        mapBtn.replaceWith(mapBtn.cloneNode(true));
+        const newMapBtn = document.getElementById('map-btn');
+        newMapBtn.addEventListener('click', showMapScreen);
+    }
 }
 
 // Загрузка списка сотрудников
@@ -716,9 +726,120 @@ document.getElementById('record-form').addEventListener('submit', async (e) => {
     }
 });
 
+// Экран карты со всеми местоположениями
+let fullMapInstance = null;
+async function showMapScreen() {
+    hideAllScreens();
+    mapScreen.classList.add('active');
+    
+    const mapContainer = document.getElementById('full-map');
+    
+    // Уничтожаем старую карту, если есть
+    if (fullMapInstance) {
+        try {
+            if (fullMapInstance.destroy) {
+                fullMapInstance.destroy();
+            }
+        } catch (e) {
+            console.error('Ошибка при уничтожении карты:', e);
+        }
+        fullMapInstance = null;
+    }
+    
+    // Проверяем, загружен ли API ключ
+    if (!yandexMapsApiKey) {
+        mapContainer.innerHTML = '<div class="map-loader"><span>API ключ Яндекс.Карт не настроен</span></div>';
+        console.error('Yandex Maps API key not configured');
+        return;
+    }
+    
+    // Проверяем доступность Yandex Maps API
+    if (!yandexMapsLoaded || typeof ymaps === 'undefined') {
+        mapContainer.innerHTML = '<div class="map-loader"><span>Яндекс Карты недоступны</span></div>';
+        console.error('Yandex Maps API not loaded');
+        return;
+    }
+    
+    // Показываем индикатор загрузки
+    mapContainer.innerHTML = '<div class="map-loader"><div class="loader small"></div><span>Загрузка карты...</span></div>';
+    
+    try {
+        // Получаем текущие местоположения сотрудников
+        const response = await fetch(`${API_URL}/api/current-locations`, {
+            headers: {
+                'Authorization': `tma ${initDataRaw}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Ошибка загрузки данных');
+        }
+        
+        const data = await response.json();
+        const locations = data.locations || [];
+        
+        console.log('Current locations:', locations);
+        
+        if (locations.length === 0) {
+            mapContainer.innerHTML = '<div class="map-loader"><span>Нет сотрудников на месте</span></div>';
+            return;
+        }
+        
+        // Очищаем контейнер
+        mapContainer.innerHTML = '';
+        
+        // Инициализируем карту
+        ymaps.ready(() => {
+            try {
+                // Вычисляем центр и зум для всех точек
+                const bounds = locations.map(loc => [loc.latitude, loc.longitude]);
+                
+                // Создаем карту
+                fullMapInstance = new ymaps.Map('full-map', {
+                    center: bounds[0], // Временный центр
+                    zoom: 10,
+                    controls: ['zoomControl', 'geolocationControl', 'typeSelector']
+                });
+                
+                // Добавляем метки для каждого сотрудника
+                locations.forEach(loc => {
+                    const placemark = new ymaps.Placemark([loc.latitude, loc.longitude], {
+                        balloonContent: `
+                            <strong>${loc.user.name}</strong><br>
+                            ${loc.address || 'Адрес не определен'}<br>
+                            <small>Отметка: ${new Date(loc.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</small>
+                        `,
+                        iconCaption: loc.user.name
+                    }, {
+                        preset: 'islands#greenCircleDotIcon',
+                        iconColor: '#56ab2f'
+                    });
+                    
+                    fullMapInstance.geoObjects.add(placemark);
+                });
+                
+                // Автоматически подстраиваем зум и центр под все метки
+                fullMapInstance.setBounds(fullMapInstance.geoObjects.getBounds(), {
+                    checkZoomRange: true,
+                    zoomMargin: 50
+                });
+                
+            } catch (error) {
+                console.error('Error initializing map:', error);
+                mapContainer.innerHTML = '<div class="map-loader"><span>Ошибка загрузки карты</span></div>';
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error loading locations:', error);
+        mapContainer.innerHTML = `<div class="map-loader"><span>${error.message}</span></div>`;
+    }
+}
+
 // Кнопки назад
 document.getElementById('back-btn').addEventListener('click', showUserScreen);
 document.getElementById('details-back-btn').addEventListener('click', showAdminScreen);
+document.getElementById('map-back-btn').addEventListener('click', showAdminScreen);
 
 // Утилиты
 function hideAllScreens() {
