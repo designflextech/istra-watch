@@ -194,6 +194,7 @@ class Record:
                         u.telegram_handle as user_telegram_handle,
                         u.telegram_id as user_telegram_id,
                         u.phone as user_phone,
+                        u.avatar_url as user_avatar_url,
                         u.created_at as user_created_at,
                         u.updated_at as user_updated_at,
                         r.id as record_id,
@@ -236,6 +237,7 @@ class Record:
                         'telegram_handle': row['user_telegram_handle'],
                         'telegram_id': row['user_telegram_id'],
                         'phone': row['user_phone'],
+                        'avatar_url': row['user_avatar_url'],
                         'created_at': row['user_created_at'].isoformat() if row['user_created_at'] else None,
                         'updated_at': row['user_updated_at'].isoformat() if row['user_updated_at'] else None
                     }
@@ -292,6 +294,7 @@ class Record:
                         u.telegram_handle as user_telegram_handle,
                         u.telegram_id as user_telegram_id,
                         u.phone as user_phone,
+                        u.avatar_url as user_avatar_url,
                         u.created_at as user_created_at,
                         u.updated_at as user_updated_at,
                         a.formatted_address,
@@ -335,6 +338,7 @@ class Record:
                         'telegram_handle': result['user_telegram_handle'],
                         'telegram_id': result['user_telegram_id'],
                         'phone': result['user_phone'],
+                        'avatar_url': result['user_avatar_url'],
                         'created_at': result['user_created_at'].isoformat() if result['user_created_at'] else None,
                         'updated_at': result['user_updated_at'].isoformat() if result['user_updated_at'] else None
                     }

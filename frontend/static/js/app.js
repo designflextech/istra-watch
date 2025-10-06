@@ -403,6 +403,34 @@ function showUserScreen() {
     document.getElementById('departure-btn').onclick = () => showRecordScreen('departure');
 }
 
+// Функция для создания кастомной иконки с аватаркой
+// Примечание: должна вызываться только после загрузки ymaps
+function createAvatarIcon(avatarUrl, userName) {
+    if (avatarUrl && typeof ymaps !== 'undefined') {
+        // Используем HTML-шаблон для круглой аватарки
+        const avatarLayout = ymaps.templateLayoutFactory.createClass(
+            '<div style="width: 40px; height: 40px; border-radius: 50%; overflow: hidden; border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); background: #f0f0f0; cursor: pointer;">' +
+                '<img src="' + avatarUrl + '" style="width: 100%; height: 100%; object-fit: cover; display: block;" onerror="this.parentElement.innerHTML=\'<div style=\\\'width:100%;height:100%;background:#3390ec;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:bold;font-size:16px;\\\'>' + (userName ? userName.charAt(0).toUpperCase() : '?') + '</div>\'" />' +
+            '</div>'
+        );
+        
+        return {
+            iconLayout: avatarLayout,
+            iconShape: {
+                type: 'Circle',
+                coordinates: [20, 20],
+                radius: 20
+            }
+        };
+    } else {
+        // Фоллбэк на стандартную иконку с первой буквой имени
+        return {
+            preset: 'islands#blueCircleDotIcon',
+            iconColor: '#3390ec'
+        };
+    }
+}
+
 // Инициализация карты пользователя
 let userMapInstance = null;
 let userMapPlacemark = null;
@@ -475,14 +503,12 @@ function initUserMap() {
                     position: { right: 10, top: 80 }
                 });
                 
-                // Добавляем метку пользователя
+                // Добавляем метку пользователя с аватаркой
+                const iconOptions = createAvatarIcon(currentUser.avatar_url, currentUser.name);
                 userMapPlacemark = new ymaps.Placemark([userLat, userLon], {
                     balloonContent: `<strong>${currentUser.name}</strong><br>Ваше местоположение`,
-                    iconCaption: currentUser.name
-                }, {
-                    preset: 'islands#blueCircleDotIcon',
-                    iconColor: '#3390ec'
-                });
+                    iconCaption: !currentUser.avatar_url ? currentUser.name : ''
+                }, iconOptions);
                 
                 userMapInstance.geoObjects.add(userMapPlacemark);
                 
@@ -801,19 +827,24 @@ async function showMapScreen() {
                     controls: ['zoomControl', 'geolocationControl', 'typeSelector']
                 });
                 
-                // Добавляем метки для каждого сотрудника
+                // Добавляем метки для каждого сотрудника с аватарками
                 locations.forEach(loc => {
+                    const iconOptions = createAvatarIcon(loc.user.avatar_url, loc.user.name);
+                    
+                    // Если используется стандартная иконка (нет аватарки), меняем цвет на зеленый
+                    if (!loc.user.avatar_url) {
+                        iconOptions.preset = 'islands#greenCircleDotIcon';
+                        iconOptions.iconColor = '#56ab2f';
+                    }
+                    
                     const placemark = new ymaps.Placemark([loc.latitude, loc.longitude], {
                         balloonContent: `
                             <strong>${loc.user.name}</strong><br>
                             ${loc.address || 'Адрес не определен'}<br>
                             <small>Отметка: ${new Date(loc.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</small>
                         `,
-                        iconCaption: loc.user.name
-                    }, {
-                        preset: 'islands#greenCircleDotIcon',
-                        iconColor: '#56ab2f'
-                    });
+                        iconCaption: !loc.user.avatar_url ? loc.user.name : ''
+                    }, iconOptions);
                     
                     fullMapInstance.geoObjects.add(placemark);
                 });
