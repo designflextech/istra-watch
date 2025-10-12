@@ -7,6 +7,7 @@ from bot.config import is_admin, YANDEX_MAPS_API_KEY
 from bot.services.user_service import UserService
 from bot.services.record_service import RecordService
 from bot.models.record import Record
+from bot.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -228,6 +229,102 @@ async def get_config(request: web.Request) -> web.Response:
     })
 
 
+async def upload_photo(request: web.Request) -> web.Response:
+    """
+    Загрузка фотографии к записи
+    
+    POST /api/records/{record_id}/photo
+    
+    Args:
+        request: HTTP запрос с multipart/form-data содержащим фото
+        
+    Returns:
+        JSON ответ с информацией о загруженном фото
+    """
+    try:
+        record_id = int(request.match_info.get('record_id'))
+    except (ValueError, TypeError):
+        return web.json_response(
+            {'error': 'Неверный ID записи'},
+            status=400
+        )
+    
+    # Получаем пользователя из init_data
+    init_data = request.get('init_data')
+    if not init_data:
+        return web.json_response(
+            {'error': 'Неверные данные аутентификации'},
+            status=401
+        )
+    
+    user_data_str = init_data.get('user')
+    if not user_data_str:
+        return web.json_response(
+            {'error': 'Отсутствуют данные пользователя'},
+            status=401
+        )
+    
+    try:
+        user_data = json.loads(user_data_str)
+        telegram_id = user_data.get('id')
+    except json.JSONDecodeError:
+        return web.json_response(
+            {'error': 'Некорректные данные пользователя'},
+            status=401
+        )
+    
+    # Получаем пользователя из БД
+    user = UserService.get_user_by_telegram_id(telegram_id)
+    if not user:
+        return web.json_response(
+            {'error': 'Пользователь не найден'},
+            status=404
+        )
+    
+    # Читаем multipart data
+    reader = await request.multipart()
+    photo_data = None
+    
+    async for part in reader:
+        if part.name == 'photo':
+            photo_data = await part.read()
+            break
+    
+    if not photo_data:
+        return web.json_response(
+            {'error': 'Фото не найдено в запросе'},
+            status=400
+        )
+    
+    try:
+        # Загружаем фото через сервис
+        result = await RecordService.upload_photo(
+            record_id=record_id,
+            photo_data=photo_data,
+            user_id=user.id
+        )
+        
+        logger.info(f"Photo uploaded for record {record_id} by user {user.id}")
+        
+        return web.json_response({
+            'success': True,
+            **result
+        })
+        
+    except ValueError as e:
+        logger.warning(f"Photo upload validation error: {e}")
+        return web.json_response(
+            {'error': str(e)},
+            status=400
+        )
+    except Exception as e:
+        logger.error(f"Photo upload error: {e}")
+        return web.json_response(
+            {'error': 'Ошибка при загрузке фото'},
+            status=500
+        )
+
+
 async def get_current_locations(request: web.Request) -> web.Response:
     """
     Получение текущих местоположений сотрудников (тех, кто на работе)
@@ -283,6 +380,7 @@ def setup_routes(app: web.Application):
     app.router.add_get('/api/employees', get_employees_status)
     app.router.add_get('/api/records/{record_id}', get_record_details)
     app.router.add_post('/api/records', create_record)
+    app.router.add_post('/api/records/{record_id}/photo', upload_photo)
     app.router.add_get('/api/address', get_address)
     app.router.add_get('/api/config', get_config)
     app.router.add_get('/api/current-locations', get_current_locations)

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Istra Watch</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=23">
+    <link rel="stylesheet" href="/static/css/style.css?v=29">
     <!-- Telegram Web App API -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- Optional: Telegram Apps SDK v3 -->
@@ -87,6 +87,23 @@
                 <textarea id="comment" rows="4" placeholder="Введите комментарий..."></textarea>
             </div>
             
+            <div class="form-group photo-section">
+                <label class="photo-label">
+                    <span class="photo-label-text">📷 Добавить фото (опционально)</span>
+                </label>
+                <label for="photo-input" class="photo-select-btn">
+                    📸 Сделать фото
+                </label>
+                <input type="file" id="photo-input" accept="image/*" capture style="display: none;">
+                <div id="photo-preview" class="photo-preview" style="display: none;">
+                    <div class="photo-preview-container">
+                        <img id="preview-image" alt="Предпросмотр фото" />
+                        <button type="button" id="remove-photo-btn" class="remove-photo-btn" title="Удалить фото">×</button>
+                    </div>
+                    <div id="photo-size-info" class="photo-size-info"></div>
+                </div>
+            </div>
+            
             <button type="submit" class="submit-btn">Сохранить</button>
         </form>
     </div>
@@ -115,7 +132,7 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js?v=26"></script>
+    <script src="/static/js/app.js?v=29"></script>
 </body>
 </html>
 

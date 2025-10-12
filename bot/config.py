@@ -28,6 +28,14 @@ YANDEX_MAPS_API_KEY = os.getenv('YANDEX_MAPS_API_KEY')
 # Mini App Configuration
 MINI_APP_URL = os.getenv('MINI_APP_URL')
 
+# S3 Configuration (TWC Storage)
+S3_ENDPOINT_URL = os.getenv('S3_ENDPOINT_URL', 'https://s3.twcstorage.ru')
+S3_REGION = os.getenv('S3_REGION', 'ru-1')
+S3_ACCESS_KEY_ID = os.getenv('S3_ACCESS_KEY_ID')
+S3_SECRET_ACCESS_KEY = os.getenv('S3_SECRET_ACCESS_KEY')
+S3_BUCKET_NAME = os.getenv('S3_BUCKET_NAME', '50f206ac-istra-geo-bot')
+S3_PUBLIC_URL = os.getenv('S3_PUBLIC_URL')  # Optional CDN URL
+
 # Database connection string
 # URL-encode password to handle special characters like @, =, etc.
 encoded_password = quote_plus(DB_PASSWORD) if DB_PASSWORD else ''

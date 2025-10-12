@@ -20,7 +20,9 @@ class Record:
         latitude: Optional[float] = None,
         longitude: Optional[float] = None,
         address_id: Optional[int] = None,
-        created_at: Optional[str] = None
+        created_at: Optional[str] = None,
+        photo_url: Optional[str] = None,
+        photo_uploaded_at: Optional[datetime] = None
     ):
         self.id = id
         self.user_id = user_id
@@ -31,6 +33,8 @@ class Record:
         self.longitude = longitude
         self.address_id = address_id
         self.created_at = created_at
+        self.photo_url = photo_url
+        self.photo_uploaded_at = photo_uploaded_at
     
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'Record':
@@ -48,7 +52,10 @@ class Record:
             'latitude': self.latitude,
             'longitude': self.longitude,
             'address_id': self.address_id,
-            'created_at': self.created_at.isoformat() if hasattr(self.created_at, 'isoformat') else str(self.created_at) if self.created_at else None
+            'created_at': self.created_at.isoformat() if hasattr(self.created_at, 'isoformat') else str(self.created_at) if self.created_at else None,
+            'photo_url': self.photo_url,
+            'photo_uploaded_at': self.photo_uploaded_at.isoformat() if self.photo_uploaded_at else None,
+            'has_photo': bool(self.photo_url)
         }
     
     @staticmethod
@@ -90,6 +97,34 @@ class Record:
                 cursor.execute(f"SELECT * FROM {records_table} WHERE id = %s", (record_id,))
                 result = cursor.fetchone()
                 return Record.from_dict(dict(result)) if result else None
+    
+    def update(self) -> 'Record':
+        """Обновление записи в базе данных"""
+        with get_db_connection() as conn:
+            with get_db_cursor(conn) as cursor:
+                set_search_path(cursor)
+                records_table = qualified_table_name('records')
+                cursor.execute(
+                    f"""
+                    UPDATE {records_table}
+                    SET user_id = %s,
+                        record_type = %s,
+                        timestamp = %s,
+                        comment = %s,
+                        latitude = %s,
+                        longitude = %s,
+                        address_id = %s,
+                        photo_url = %s,
+                        photo_uploaded_at = %s
+                    WHERE id = %s
+                    RETURNING *
+                    """,
+                    (self.user_id, self.record_type, self.timestamp, self.comment,
+                     self.latitude, self.longitude, self.address_id,
+                     self.photo_url, self.photo_uploaded_at, self.id)
+                )
+                result = cursor.fetchone()
+                return Record.from_dict(dict(result)) if result else self
     
     @staticmethod
     def get_by_user_and_date(user_id: int, target_date: date) -> List['Record']:
@@ -205,6 +240,7 @@ class Record:
                         r.longitude,
                         r.address_id,
                         r.created_at as record_created_at,
+                        r.photo_url,
                         a.formatted_address,
                         a.latitude as address_latitude,
                         a.longitude as address_longitude,
@@ -251,7 +287,8 @@ class Record:
                             'comment': row['comment'],
                             'latitude': row['latitude'],
                             'longitude': row['longitude'],
-                            'address': row['formatted_address'] if row['formatted_address'] else None
+                            'address': row['formatted_address'] if row['formatted_address'] else None,
+                            'has_photo': bool(row.get('photo_url'))  # Для lazy loading
                         }
                     
                     output.append({
@@ -291,6 +328,8 @@ class Record:
                         r.longitude as record_longitude,
                         r.address_id,
                         r.created_at as record_created_at,
+                        r.photo_url,
+                        r.photo_uploaded_at,
                         u.name as user_name,
                         u.email as user_email,
                         u.telegram_handle as user_telegram_handle,
@@ -328,7 +367,10 @@ class Record:
                     'latitude': result['record_latitude'],
                     'longitude': result['record_longitude'],
                     'address_id': result['address_id'],
-                    'created_at': result['record_created_at'].isoformat() if result['record_created_at'] else None
+                    'created_at': result['record_created_at'].isoformat() if result['record_created_at'] else None,
+                    'photo_url': result['photo_url'],
+                    'photo_uploaded_at': result['photo_uploaded_at'].isoformat() if result['photo_uploaded_at'] else None,
+                    'has_photo': bool(result['photo_url'])
                 }
                 
                 user_data = None

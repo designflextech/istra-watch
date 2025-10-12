@@ -4,6 +4,11 @@ from datetime import datetime, date
 from bot.models.record import Record
 from bot.models.address import Address
 from bot.services.yandex_maps import YandexMapsService
+from bot.services.s3_service import S3Service
+from bot.services.image_processor import ImageProcessor
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class RecordService:
@@ -102,4 +107,61 @@ class RecordService:
         """
         # Используем оптимизированный метод с JOIN вместо N+1 запросов
         return Record.get_by_user_with_addresses(user_id, limit)
+    
+    @staticmethod
+    async def upload_photo(record_id: int, photo_data: bytes, user_id: int) -> Dict[str, Any]:
+        """
+        Загрузка фотографии к записи
+        
+        Args:
+            record_id: ID записи
+            photo_data: Бинарные данные фотографии
+            user_id: ID пользователя (для проверки прав)
+            
+        Returns:
+            Словарь с информацией о загруженном фото
+            
+        Raises:
+            ValueError: При ошибке валидации
+            Exception: При ошибке загрузки
+        """
+        # Получаем запись
+        record = Record.get_by_id(record_id)
+        if not record:
+            raise ValueError('Запись не найдена')
+        
+        # Проверяем права (пользователь может загружать фото только к своим записям)
+        if record.user_id != user_id:
+            raise ValueError('Недостаточно прав для загрузки фото к этой записи')
+        
+        # Валидация изображения
+        is_valid, error_message = ImageProcessor.validate_image(photo_data)
+        if not is_valid:
+            raise ValueError(error_message)
+        
+        # Обработка изображения (сжатие, сохранение EXIF)
+        processed_data, metadata = ImageProcessor.process_image(photo_data)
+        
+        logger.info(f"Image processed for record {record_id}: {metadata}")
+        
+        # Загрузка в S3
+        photo_url = S3Service.upload_photo(
+            file_data=processed_data,
+            user_id=user_id,
+            record_id=record_id,
+            content_type='image/jpeg'
+        )
+        
+        # Обновление записи в БД
+        record.photo_url = photo_url
+        record.photo_uploaded_at = datetime.now()
+        record = record.update()
+        
+        logger.info(f"Photo uploaded for record {record_id}: {photo_url}")
+        
+        return {
+            'photo_url': photo_url,
+            'photo_uploaded_at': record.photo_uploaded_at.isoformat() if record.photo_uploaded_at else None,
+            'metadata': metadata
+        }
 

@@ -76,6 +76,7 @@ let currentLocation = null;
 let currentLocationTimestamp = null; // Время получения геолокации
 let yandexMapsApiKey = null;
 let yandexMapsLoaded = false;
+let selectedPhoto = null; // Выбранное фото для загрузки
 
 // Элементы DOM
 const loadingScreen = document.getElementById('loading-screen');
@@ -293,6 +294,7 @@ function renderEmployees(employees) {
         
         let statusBadge = '<span class="status-badge absent">Не на месте</span>';
         let details = 'Не отмечался';
+        let photoBadge = '';
         
         if (record) {
             const recordType = record.type === 'arrival' ? 'Пришел' : 'Ушел';
@@ -301,12 +303,17 @@ function renderEmployees(employees) {
             
             statusBadge = `<span class="status-badge ${badgeClass}">${recordType}</span>`;
             details = `${recordType}: ${time}`;
+            
+            // Показываем значок камеры если есть фото (lazy loading)
+            if (record.has_photo) {
+                photoBadge = '<span class="photo-badge">📷</span>';
+            }
         }
         
         return `
             <div class="employee-card" onclick="showRecordDetails(${record ? record.id : 'null'})">
                 <div class="employee-info">
-                    <span class="employee-name">${user.name}</span>
+                    <span class="employee-name">${user.name}${photoBadge}</span>
                     ${statusBadge}
                 </div>
                 <div class="employee-details">${details}</div>
@@ -367,6 +374,18 @@ async function showRecordDetails(recordId) {
                 <div class="detail-card">
                     <h3>Комментарий</h3>
                     <p>${record.comment}</p>
+                </div>
+            ` : ''}
+            ${record.photo_url ? `
+                <div class="detail-card photo-card">
+                    <h3>Фотография</h3>
+                    <img 
+                        src="${record.photo_url}" 
+                        alt="Фото записи" 
+                        class="record-photo"
+                        onclick="openPhotoFullscreen('${record.photo_url}')"
+                        loading="lazy"
+                    />
                 </div>
             ` : ''}
         `;
@@ -597,8 +616,20 @@ async function showRecordScreen(recordType) {
     const recordTitle = document.getElementById('record-title');
     recordTitle.textContent = recordType === 'arrival' ? 'Отметка о приходе' : 'Отметка об уходе';
     
+    // Сбрасываем выбранное фото
+    resetPhotoSelection();
+    
     // Получаем геолокацию
     await getLocation();
+}
+
+// Сброс выбранного фото
+function resetPhotoSelection() {
+    selectedPhoto = null;
+    document.getElementById('photo-input').value = '';
+    document.getElementById('photo-preview').style.display = 'none';
+    document.getElementById('preview-image').src = '';
+    document.getElementById('photo-size-info').textContent = '';
 }
 
 // Проверка актуальности геолокации
@@ -712,6 +743,48 @@ async function getLocation() {
     }
 }
 
+// Обработчик выбора фото (теперь работает через label for="photo-input")
+document.getElementById('photo-input').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Валидация размера (5MB)
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) {
+        if (window.Telegram?.WebApp?.showPopup) {
+            window.Telegram.WebApp.showPopup({
+                title: 'Ошибка',
+                message: 'Размер фото не должен превышать 5MB',
+                buttons: [{ id: 'ok', type: 'default', text: 'OK' }]
+            });
+        } else {
+            alert('Размер фото не должен превышать 5MB');
+        }
+        resetPhotoSelection();
+        return;
+    }
+    
+    // Предпросмотр
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        document.getElementById('preview-image').src = e.target.result;
+        document.getElementById('photo-preview').style.display = 'block';
+        
+        // Показываем размер файла
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        document.getElementById('photo-size-info').textContent = `Размер: ${sizeMB} MB`;
+    };
+    reader.readAsDataURL(file);
+    
+    selectedPhoto = file;
+    console.log('Photo selected:', file.name, file.size, 'bytes');
+});
+
+// Обработчик удаления фото
+document.getElementById('remove-photo-btn').addEventListener('click', () => {
+    resetPhotoSelection();
+});
+
 // Обработка формы
 document.getElementById('record-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -728,6 +801,7 @@ document.getElementById('record-form').addEventListener('submit', async (e) => {
     try {
         const comment = document.getElementById('comment').value;
         
+        // 1. Создаем запись
         const response = await fetch(`${API_URL}/api/records`, {
             method: 'POST',
             headers: { 
@@ -749,28 +823,81 @@ document.getElementById('record-form').addEventListener('submit', async (e) => {
             throw new Error(data.error || 'Ошибка сохранения');
         }
         
-        // Показываем успешное сообщение
+        const recordId = data.record.id;
+        console.log('Record created:', recordId);
+        
+        // 2. Если есть фото, загружаем его
+        if (selectedPhoto) {
+            submitBtn.textContent = 'Загрузка фото...';
+            console.log('Uploading photo for record:', recordId);
+            
+            const formData = new FormData();
+            formData.append('photo', selectedPhoto);
+            
+            const photoResponse = await fetch(`${API_URL}/api/records/${recordId}/photo`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `tma ${initDataRaw}`
+                },
+                body: formData
+            });
+            
+            if (!photoResponse.ok) {
+                const photoError = await photoResponse.json();
+                console.error('Photo upload failed:', photoError);
+                // Не прерываем процесс, запись уже создана
+                throw new Error(`Запись сохранена, но фото не загружено: ${photoError.error || 'Неизвестная ошибка'}`);
+            }
+            
+            const photoData = await photoResponse.json();
+            console.log('Photo uploaded:', photoData.photo_url);
+        }
+        
+        // 3. Показываем успешное сообщение
         if (window.Telegram?.WebApp?.showPopup) {
             window.Telegram.WebApp.showPopup({
                 title: 'Успех',
-                message: 'Запись успешно сохранена!',
+                message: selectedPhoto ? 'Запись и фото успешно сохранены!' : 'Запись успешно сохранена!',
                 buttons: [{ id: 'ok', type: 'default', text: 'OK' }]
             }, () => {
                 showUserScreen();
             });
         } else {
             // Fallback на обычный alert
-            alert('Запись успешно сохранена!');
+            alert(selectedPhoto ? 'Запись и фото успешно сохранены!' : 'Запись успешно сохранена!');
             showUserScreen();
         }
         
     } catch (error) {
-        alert(error.message);
+        console.error('Form submission error:', error);
+        if (window.Telegram?.WebApp?.showPopup) {
+            window.Telegram.WebApp.showPopup({
+                title: 'Ошибка',
+                message: error.message,
+                buttons: [{ id: 'ok', type: 'default', text: 'OK' }]
+            });
+        } else {
+            alert(error.message);
+        }
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Сохранить';
     }
 });
+
+// Полноэкранный просмотр фото
+function openPhotoFullscreen(photoUrl) {
+    console.log('Opening photo fullscreen:', photoUrl);
+    
+    // Telegram Mini App имеет встроенную поддержку просмотра изображений
+    if (window.Telegram?.WebApp?.openLink) {
+        // Открываем в браузере для полноэкранного просмотра
+        window.Telegram.WebApp.openLink(photoUrl);
+    } else {
+        // Fallback - открываем в новой вкладке
+        window.open(photoUrl, '_blank');
+    }
+}
 
 // Экран карты со всеми местоположениями
 let fullMapInstance = null;
