@@ -785,6 +785,182 @@ document.getElementById('remove-photo-btn').addEventListener('click', () => {
     resetPhotoSelection();
 });
 
+// ============== CAMERA FUNCTIONALITY ==============
+
+let cameraStream = null;
+let currentFacingMode = 'environment'; // 'environment' = задняя камера, 'user' = фронтальная
+
+// Открытие камеры
+async function openCamera() {
+    const modal = document.getElementById('camera-modal');
+    const video = document.getElementById('camera-video');
+    
+    modal.style.display = 'flex';
+    
+    try {
+        // Запрашиваем доступ к камере
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: currentFacingMode,
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            },
+            audio: false
+        });
+        
+        video.srcObject = cameraStream;
+        await video.play();
+        
+    } catch (error) {
+        console.error('Camera access error:', error);
+        closeCamera();
+        
+        if (window.Telegram?.WebApp?.showPopup) {
+            window.Telegram.WebApp.showPopup({
+                title: 'Ошибка',
+                message: 'Не удалось получить доступ к камере. Проверьте разрешения.',
+                buttons: [{ id: 'ok', type: 'default', text: 'OK' }]
+            });
+        } else {
+            alert('Не удалось получить доступ к камере. Проверьте разрешения.');
+        }
+    }
+}
+
+// Закрытие камеры
+function closeCamera() {
+    const modal = document.getElementById('camera-modal');
+    const video = document.getElementById('camera-video');
+    
+    // Останавливаем все треки (камеру)
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+    }
+    
+    video.srcObject = null;
+    modal.style.display = 'none';
+}
+
+// Захват фото с камеры
+function capturePhoto() {
+    const video = document.getElementById('camera-video');
+    const canvas = document.getElementById('camera-canvas');
+    const ctx = canvas.getContext('2d');
+    
+    // Устанавливаем размер canvas равным размеру видео
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    
+    // Рисуем текущий кадр на canvas
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    
+    // Конвертируем canvas в Blob
+    canvas.toBlob((blob) => {
+        if (!blob) {
+            console.error('Failed to capture photo');
+            return;
+        }
+        
+        // Создаем File объект из Blob
+        const file = new File([blob], `photo_${Date.now()}.jpg`, { type: 'image/jpeg' });
+        
+        // Валидация размера (5MB)
+        const maxSize = 5 * 1024 * 1024;
+        if (file.size > maxSize) {
+            if (window.Telegram?.WebApp?.showPopup) {
+                window.Telegram.WebApp.showPopup({
+                    title: 'Ошибка',
+                    message: 'Размер фото не должен превышать 5MB',
+                    buttons: [{ id: 'ok', type: 'default', text: 'OK' }]
+                });
+            } else {
+                alert('Размер фото не должен превышать 5MB');
+            }
+            return;
+        }
+        
+        // Устанавливаем фото как выбранное
+        selectedPhoto = file;
+        
+        // Показываем предпросмотр
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            document.getElementById('preview-image').src = e.target.result;
+            document.getElementById('photo-preview').style.display = 'block';
+            
+            // Показываем размер файла
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            document.getElementById('photo-size-info').textContent = `Размер: ${sizeMB} MB`;
+        };
+        reader.readAsDataURL(file);
+        
+        console.log('Photo captured:', file.name, file.size, 'bytes');
+        
+        // Закрываем камеру
+        closeCamera();
+        
+    }, 'image/jpeg', 0.9); // 0.9 = качество JPEG (90%)
+}
+
+// Переключение камеры (фронтальная/задняя)
+async function switchCamera() {
+    // Переключаем режим
+    currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+    
+    // Закрываем текущую камеру
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+        cameraStream = null;
+    }
+    
+    // Открываем камеру с новым режимом
+    const video = document.getElementById('camera-video');
+    
+    try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: currentFacingMode,
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            },
+            audio: false
+        });
+        
+        video.srcObject = cameraStream;
+        await video.play();
+        
+    } catch (error) {
+        console.error('Camera switch error:', error);
+        
+        // Если не удалось переключить, возвращаем обратно
+        currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+        
+        if (window.Telegram?.WebApp?.showPopup) {
+            window.Telegram.WebApp.showPopup({
+                title: 'Ошибка',
+                message: 'Не удалось переключить камеру',
+                buttons: [{ id: 'ok', type: 'default', text: 'OK' }]
+            });
+        } else {
+            alert('Не удалось переключить камеру');
+        }
+    }
+}
+
+// Обработчики событий для камеры
+document.getElementById('take-photo-btn').addEventListener('click', openCamera);
+document.getElementById('close-camera-btn').addEventListener('click', closeCamera);
+document.getElementById('capture-btn').addEventListener('click', capturePhoto);
+document.getElementById('switch-camera-btn').addEventListener('click', switchCamera);
+
+// Закрываем камеру при клике на фон модального окна
+document.getElementById('camera-modal').addEventListener('click', (e) => {
+    if (e.target.id === 'camera-modal') {
+        closeCamera();
+    }
+});
+
 // Обработка формы
 document.getElementById('record-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -1014,6 +1190,11 @@ document.getElementById('map-back-btn').addEventListener('click', showAdminScree
 
 // Утилиты
 function hideAllScreens() {
+    // Закрываем камеру если она открыта
+    if (cameraStream) {
+        closeCamera();
+    }
+    
     document.querySelectorAll('.screen').forEach(screen => {
         screen.classList.remove('active');
     });

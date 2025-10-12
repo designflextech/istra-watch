@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Istra Watch</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=29">
+    <link rel="stylesheet" href="/static/css/style.css?v=31">
     <!-- Telegram Web App API -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- Optional: Telegram Apps SDK v3 -->
@@ -91,16 +91,39 @@
                 <label class="photo-label">
                     <span class="photo-label-text">📷 Добавить фото (опционально)</span>
                 </label>
-                <label for="photo-input" class="photo-select-btn">
-                    📸 Сделать фото
-                </label>
-                <input type="file" id="photo-input" accept="image/*" capture style="display: none;">
+                <div class="photo-buttons">
+                    <button type="button" id="take-photo-btn" class="photo-action-btn">
+                        📸 Сделать снимок
+                    </button>
+                    <!--
+                    <label for="photo-input" class="photo-action-btn" style="margin: 0; cursor: pointer; display: inline-block;">
+                        🖼️ Выбрать из галереи
+                    </label>
+                    -->
+                </div>
+                <input type="file" id="photo-input" accept="image/*" style="display: none;">
                 <div id="photo-preview" class="photo-preview" style="display: none;">
                     <div class="photo-preview-container">
                         <img id="preview-image" alt="Предпросмотр фото" />
                         <button type="button" id="remove-photo-btn" class="remove-photo-btn" title="Удалить фото">×</button>
                     </div>
                     <div id="photo-size-info" class="photo-size-info"></div>
+                </div>
+            </div>
+            
+            <!-- Модальное окно для камеры -->
+            <div id="camera-modal" class="camera-modal" style="display: none;">
+                <div class="camera-container">
+                    <div class="camera-header">
+                        <h3>Камера</h3>
+                        <button type="button" id="close-camera-btn" class="close-camera-btn">×</button>
+                    </div>
+                    <video id="camera-video" class="camera-video" autoplay playsinline></video>
+                    <canvas id="camera-canvas" style="display: none;"></canvas>
+                    <div class="camera-controls">
+                        <button type="button" id="switch-camera-btn" class="switch-camera-btn">🔄</button>
+                        <button type="button" id="capture-btn" class="capture-btn"></button>
+                    </div>
                 </div>
             </div>
             
@@ -132,7 +155,7 @@
         </div>
     </div>
 
-    <script src="/static/js/app.js?v=29"></script>
+    <script src="/static/js/app.js?v=31"></script>
 </body>
 </html>
 
