@@ -249,6 +249,8 @@ class Record:
                             'type': row['record_type'],
                             'timestamp': row['timestamp'].isoformat() if row['timestamp'] else None,
                             'comment': row['comment'],
+                            'latitude': row['latitude'],
+                            'longitude': row['longitude'],
                             'address': row['formatted_address'] if row['formatted_address'] else None
                         }
                     

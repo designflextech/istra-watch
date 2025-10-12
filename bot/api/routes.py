@@ -254,19 +254,16 @@ async def get_current_locations(request: web.Request) -> web.Response:
         logger.info(f"User: {user.get('name') if user else 'None'}, Record type: {record.get('type') if record else 'None'}")
         
         # Проверяем что есть хоть какая-то запись (arrival или departure)
-        if record:
-            # Получаем координаты из последней записи
-            full_record = Record.get_by_id(record['id'])
-            if full_record and full_record.latitude and full_record.longitude:
-                current_locations.append({
-                    'user': user,
-                    'latitude': full_record.latitude,
-                    'longitude': full_record.longitude,
-                    'timestamp': record['timestamp'],
-                    'address': record.get('address'),
-                    'record_type': record.get('type')  # Добавляем тип записи для отображения
-                })
-                logger.info(f"Added location for user: {user.get('name')} (type: {record.get('type')})")
+        if record and record.get('latitude') and record.get('longitude'):
+            current_locations.append({
+                'user': user,
+                'latitude': record['latitude'],
+                'longitude': record['longitude'],
+                'timestamp': record['timestamp'],
+                'address': record.get('address'),
+                'record_type': record.get('type')  # Добавляем тип записи для отображения
+            })
+            logger.info(f"Added location for user: {user.get('name')} (type: {record.get('type')})")
     
     logger.info(f"Total current locations: {len(current_locations)}")
     

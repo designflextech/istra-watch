@@ -54,7 +54,11 @@ def get_db_connection() -> Generator:
             yield conn
             conn.commit()
         except Exception:
-            conn.rollback()
+            try:
+                if not conn.closed:
+                    conn.rollback()
+            except Exception as rollback_error:
+                logger.warning(f"Failed to rollback: {rollback_error}")
             raise
         finally:
             conn.close()
@@ -62,15 +66,45 @@ def get_db_connection() -> Generator:
     
     # Получаем соединение из пула
     conn = _connection_pool.getconn()
+    use_fresh_connection = False
+    
+    # Проверяем живость соединения перед использованием
+    try:
+        with conn.cursor() as test_cursor:
+            test_cursor.execute("SELECT 1")
+    except (psycopg2.OperationalError, psycopg2.InterfaceError) as e:
+        logger.warning(f"Connection from pool is dead, creating fresh connection: {e}")
+        # Соединение мертво, закрываем его и создаем СВЕЖЕЕ минуя пул
+        try:
+            conn.close()
+        except Exception:
+            pass
+        # Создаем новое соединение напрямую (не из пула)
+        conn = psycopg2.connect(DATABASE_URL)
+        use_fresh_connection = True
+        logger.info("Fresh database connection created successfully")
+    
     try:
         yield conn
         conn.commit()
     except Exception:
-        conn.rollback()
+        # Безопасная обработка rollback на возможно мертвом соединении
+        try:
+            if not conn.closed:
+                conn.rollback()
+        except Exception as rollback_error:
+            logger.warning(f"Failed to rollback: {rollback_error}")
         raise
     finally:
-        # Возвращаем соединение в пул
-        _connection_pool.putconn(conn)
+        if use_fresh_connection:
+            # Свежее соединение просто закрываем (оно не из пула)
+            try:
+                conn.close()
+            except Exception:
+                pass
+        else:
+            # Соединение из пула возвращаем обратно
+            _connection_pool.putconn(conn)
 
 
 @contextmanager

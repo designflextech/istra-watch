@@ -31,7 +31,14 @@ MINI_APP_URL = os.getenv('MINI_APP_URL')
 # Database connection string
 # URL-encode password to handle special characters like @, =, etc.
 encoded_password = quote_plus(DB_PASSWORD) if DB_PASSWORD else ''
-DATABASE_URL = f"postgresql://{DB_USER}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+# Параметры для надежного соединения:
+# - sslmode=prefer: использовать SSL если доступно
+# - connect_timeout=10: таймаут подключения 10 секунд
+# - keepalives=1: включить TCP keepalive
+# - keepalives_idle=30: начать проверку после 30 сек простоя
+# - keepalives_interval=10: проверять каждые 10 секунд
+# - keepalives_count=5: максимум 5 попыток проверки
+DATABASE_URL = f"postgresql://{DB_USER}:{encoded_password}@{DB_HOST}:{DB_PORT}/{DB_NAME}?sslmode=prefer&connect_timeout=10&keepalives=1&keepalives_idle=30&keepalives_interval=10&keepalives_count=5"
 
 
 def is_admin(user_id: int) -> bool:
