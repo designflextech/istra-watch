@@ -369,6 +369,77 @@ async def get_current_locations(request: web.Request) -> web.Response:
     })
 
 
+async def get_user_today_status(request: web.Request) -> web.Response:
+    """
+    Получение статуса пользователя за сегодня
+    
+    Returns:
+        JSON ответ с информацией о последней записи за сегодня:
+        {
+            "has_arrival": bool,    # есть ли отметка о приходе
+            "has_departure": bool,  # есть ли отметка об уходе  
+            "last_record_type": str | None  # тип последней записи ('arrival' или 'departure')
+        }
+    """
+    # Init data уже валидированы в middleware
+    init_data = request.get('init_data')
+    
+    if not init_data:
+        return web.json_response(
+            {'error': 'Неверные данные аутентификации'},
+            status=401
+        )
+    
+    # Извлекаем user data
+    user_data_str = init_data.get('user')
+    if not user_data_str:
+        return web.json_response(
+            {'error': 'Отсутствуют данные пользователя'},
+            status=401
+        )
+    
+    try:
+        user_data = json.loads(user_data_str)
+        telegram_id = user_data.get('id')
+    except json.JSONDecodeError:
+        return web.json_response(
+            {'error': 'Некорректные данные пользователя'},
+            status=401
+        )
+    
+    # Получаем пользователя из БД
+    user = UserService.get_user_by_telegram_id(telegram_id)
+    
+    if not user:
+        return web.json_response(
+            {'error': 'Пользователь не найден'},
+            status=404
+        )
+    
+    # Получаем последнюю запись за сегодня
+    today = date.today()
+    last_record = Record.get_latest_by_user_and_date(user.id, today)
+    
+    response_data = {
+        'has_arrival': False,
+        'has_departure': False,
+        'last_record_type': None
+    }
+    
+    if last_record:
+        response_data['last_record_type'] = last_record.record_type
+        
+        # Проверяем, есть ли записи о приходе и уходе за сегодня
+        records_today = Record.get_by_user_and_date(user.id, today)
+        for record in records_today:
+            if record.record_type == Record.ARRIVAL:
+                response_data['has_arrival'] = True
+            elif record.record_type == Record.DEPARTURE:
+                response_data['has_departure'] = True
+    
+    return web.json_response(response_data)
+
+
 def setup_routes(app: web.Application):
     """
     Настройка маршрутов API
@@ -384,4 +455,5 @@ def setup_routes(app: web.Application):
     app.router.add_get('/api/address', get_address)
     app.router.add_get('/api/config', get_config)
     app.router.add_get('/api/current-locations', get_current_locations)
+    app.router.add_get('/api/user/today-status', get_user_today_status)
 

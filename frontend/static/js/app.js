@@ -396,7 +396,7 @@ async function showRecordDetails(recordId) {
 }
 
 // Экран пользователя
-function showUserScreen() {
+async function showUserScreen() {
     hideAllScreens();
     userScreen.classList.add('active');
     
@@ -418,9 +418,53 @@ function showUserScreen() {
     // Инициализируем карту
     initUserMap();
     
-    // Обработчики кнопок
-    document.getElementById('arrival-btn').onclick = () => showRecordScreen('arrival');
-    document.getElementById('departure-btn').onclick = () => showRecordScreen('departure');
+    // Получаем статус пользователя за сегодня и обновляем кнопку
+    await updateActionButton();
+}
+
+// Функция для обновления кнопки действия на основе статуса пользователя
+async function updateActionButton() {
+    const actionBtn = document.getElementById('action-btn');
+    
+    try {
+        // Получаем статус пользователя за сегодня
+        const response = await fetch(`${API_URL}/api/user/today-status`, {
+            headers: {
+                'Authorization': `tma ${initDataRaw}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch user status');
+        }
+        
+        const status = await response.json();
+        
+        // Определяем, что показывать на основе статуса
+        if (status.last_record_type === 'departure') {
+            // Если есть отметка об уходе - скрываем кнопку (карта занимает её место)
+            actionBtn.style.display = 'none';
+        } else if (status.last_record_type === 'arrival') {
+            // Если есть отметка о приходе - показываем кнопку "Я ухожу"
+            actionBtn.style.display = 'block';
+            actionBtn.innerHTML = 'Я ухожу';
+            actionBtn.className = 'action-btn departure';
+            actionBtn.onclick = () => showRecordScreen('departure');
+        } else {
+            // Если нет отметок - показываем кнопку "Я на месте"
+            actionBtn.style.display = 'block';
+            actionBtn.innerHTML = 'Я на месте';
+            actionBtn.className = 'action-btn arrival';
+            actionBtn.onclick = () => showRecordScreen('arrival');
+        }
+    } catch (error) {
+        console.error('Error updating action button:', error);
+        // В случае ошибки показываем кнопку "Я на месте" по умолчанию
+        actionBtn.style.display = 'block';
+        actionBtn.innerHTML = 'Я на месте';
+        actionBtn.className = 'action-btn arrival';
+        actionBtn.onclick = () => showRecordScreen('arrival');
+    }
 }
 
 // Функция для создания кастомной иконки с аватаркой
