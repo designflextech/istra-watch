@@ -341,16 +341,17 @@ async def get_current_locations(request: web.Request) -> web.Response:
     
     logger.info(f"Total employees with records today: {len(employees_data)}")
     
-    # Фильтруем тех, кто отметился сегодня (и приход, и уход)
-    # Не показываем только тех, кто вообще не делал записей
+    # Формируем список местоположений
+    # Показываем последнюю запись (departure если есть, иначе arrival)
     current_locations = []
     for emp in employees_data:
-        record = emp.get('record')
         user = emp.get('user')
+        arrival_record = emp.get('arrival_record')
+        departure_record = emp.get('departure_record')
         
-        logger.info(f"User: {user.get('name') if user else 'None'}, Record type: {record.get('type') if record else 'None'}")
+        # Выбираем последнюю запись
+        record = departure_record if departure_record else arrival_record
         
-        # Проверяем что есть хоть какая-то запись (arrival или departure)
         if record and record.get('latitude') and record.get('longitude'):
             current_locations.append({
                 'user': user,
@@ -358,9 +359,9 @@ async def get_current_locations(request: web.Request) -> web.Response:
                 'longitude': record['longitude'],
                 'timestamp': record['timestamp'],
                 'address': record.get('address'),
-                'record_type': record.get('type')  # Добавляем тип записи для отображения
+                'record_type': 'departure' if departure_record else 'arrival'
             })
-            logger.info(f"Added location for user: {user.get('name')} (type: {record.get('type')})")
+            logger.info(f"Added location for user: {user.get('name')} (type: {'departure' if departure_record else 'arrival'})")
     
     logger.info(f"Total current locations: {len(current_locations)}")
     

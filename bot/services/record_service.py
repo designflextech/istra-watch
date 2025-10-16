@@ -68,16 +68,16 @@ class RecordService:
     @staticmethod
     def get_records_by_date(target_date: date) -> List[Dict[str, Any]]:
         """
-        Получение записей за определенную дату (оптимизировано с JOIN)
+        Получение записей за определенную дату с обеими записями arrival/departure (оптимизировано с LATERAL JOIN)
         
         Args:
             target_date: Целевая дата
             
         Returns:
-            Список словарей с информацией о пользователях и их записях
+            Список словарей с информацией о пользователях, их arrival_record и departure_record
         """
-        # Используем оптимизированный метод с JOIN вместо N+1 запросов
-        return Record.get_all_by_date_with_users_and_addresses(target_date)
+        # Используем новый оптимизированный метод с LATERAL JOIN для получения обеих записей
+        return Record.get_all_by_date_with_users_and_both_records(target_date)
     
     @staticmethod
     def get_record_details(record_id: int) -> Optional[Dict[str, Any]]:
