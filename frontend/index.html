@@ -114,9 +114,39 @@
                 </div>
             </div>
             
+            <!-- Time and Location Container -->
+            <div id="time-location-container" class="time-location-container" style="display: none;">
+                <!-- Arrival Record -->
+                <div id="arrival-record" class="time-location-row" style="display: none;">
+                    <div class="time-location-dot"></div>
+                    <div class="time-location-details">
+                        <div class="time-location-text">
+                            <span id="arrival-time" class="time-text"></span>
+                            <span class="separator-dot"></span>
+                            <span id="arrival-location" class="location-text"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Divider (only shown when both records exist) -->
+                <div id="time-location-divider" class="time-location-divider" style="display: none;"></div>
+                
+                <!-- Departure Record -->
+                <div id="departure-record" class="time-location-row" style="display: none;">
+                    <div class="time-location-dot"></div>
+                    <div class="time-location-details">
+                        <div class="time-location-text">
+                            <span id="departure-time" class="time-text"></span>
+                            <span class="separator-dot"></span>
+                            <span id="departure-location" class="location-text"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Яндекс карта -->
             <div style="padding: 0 16px; margin-top: 20px;">
-                <div id="user-map" style="width: 100%; height: 499px; border-radius: 16px; position: relative; background: #f4f4f5;">
+                <div id="user-map" class="user-map no-records">
                     <div class="map-loader" style="display: flex; align-items: center; justify-content: center; gap: 12px; height: 100%; color: #999;">
                         <div class="loader small"></div>
                         <span>Загрузка карты...</span>
@@ -125,7 +155,7 @@
             </div>
             
             <!-- Action Button -->
-            <div style="display: flex; justify-content: center; margin-top: 20px; padding: 0 16px;">
+            <div id="action-button-container" class="action-button-container no-records" style="display: flex; justify-content: center; padding: 0 16px;">
                 <button id="action-btn" class="btn btn-primary" style="display: none; width: 195px;">
                     <!-- Текст будет установлен динамически -->
                 </button>

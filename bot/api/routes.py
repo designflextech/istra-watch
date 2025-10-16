@@ -371,14 +371,16 @@ async def get_current_locations(request: web.Request) -> web.Response:
 
 async def get_user_today_status(request: web.Request) -> web.Response:
     """
-    Получение статуса пользователя за сегодня
+    Получение статуса пользователя за сегодня с деталями записей
     
     Returns:
-        JSON ответ с информацией о последней записи за сегодня:
+        JSON ответ с информацией о записях за сегодня:
         {
             "has_arrival": bool,    # есть ли отметка о приходе
             "has_departure": bool,  # есть ли отметка об уходе  
-            "last_record_type": str | None  # тип последней записи ('arrival' или 'departure')
+            "last_record_type": str | None,  # тип последней записи ('arrival' или 'departure')
+            "arrival_record": dict | None,   # детали записи о приходе
+            "departure_record": dict | None  # детали записи об уходе
         }
     """
     # Init data уже валидированы в middleware
@@ -416,27 +418,78 @@ async def get_user_today_status(request: web.Request) -> web.Response:
             status=404
         )
     
-    # Получаем последнюю запись за сегодня
+    # Получаем записи за сегодня с адресами
     today = date.today()
-    last_record = Record.get_latest_by_user_and_date(user.id, today)
+    records_today = Record.get_by_user_and_date_with_addresses(user.id, today)
+    
+    # Временная отладка
+    logger.info(f"User {user.id} records for {today}: {len(records_today)} records found")
+    for i, record_data in enumerate(records_today):
+        logger.info(f"Record {i}: type={record_data['record']['record_type']}, time={record_data['record']['timestamp']}, address={record_data['address']}")
     
     response_data = {
         'has_arrival': False,
         'has_departure': False,
-        'last_record_type': None
+        'last_record_type': None,
+        'arrival_record': None,
+        'departure_record': None
     }
     
-    if last_record:
-        response_data['last_record_type'] = last_record.record_type
+    if records_today:
+        # Сортируем по времени (самая последняя первая)
+        records_today.sort(key=lambda x: x['record']['timestamp'], reverse=True)
         
-        # Проверяем, есть ли записи о приходе и уходе за сегодня
-        records_today = Record.get_by_user_and_date(user.id, today)
-        for record in records_today:
-            if record.record_type == Record.ARRIVAL:
+        # Устанавливаем тип последней записи
+        response_data['last_record_type'] = records_today[0]['record']['record_type']
+        
+        # Ищем записи о приходе и уходе
+        for record_data in records_today:
+            record = record_data['record']
+            address = record_data['address']
+            
+            if record['record_type'] == Record.ARRIVAL and not response_data['has_arrival']:
                 response_data['has_arrival'] = True
-            elif record.record_type == Record.DEPARTURE:
+                # Извлекаем время из ISO формата (например, "2025-01-15T09:30:00" -> "09:30")
+                time_str = None
+                if record['timestamp']:
+                    try:
+                        # Если timestamp в формате ISO, извлекаем время
+                        if 'T' in record['timestamp']:
+                            time_str = record['timestamp'].split('T')[1][:5]  # HH:MM
+                        else:
+                            time_str = record['timestamp'][:5]  # Fallback
+                        logger.info(f"Extracted time for arrival: {time_str} from {record['timestamp']}")
+                    except Exception as e:
+                        logger.error(f"Error extracting time from {record['timestamp']}: {e}")
+                        time_str = None
+                
+                response_data['arrival_record'] = {
+                    'time': time_str,
+                    'address': address['formatted_address'] if address else None
+                }
+            elif record['record_type'] == Record.DEPARTURE and not response_data['has_departure']:
                 response_data['has_departure'] = True
+                # Извлекаем время из ISO формата (например, "2025-01-15T09:30:00" -> "09:30")
+                time_str = None
+                if record['timestamp']:
+                    try:
+                        # Если timestamp в формате ISO, извлекаем время
+                        if 'T' in record['timestamp']:
+                            time_str = record['timestamp'].split('T')[1][:5]  # HH:MM
+                        else:
+                            time_str = record['timestamp'][:5]  # Fallback
+                        logger.info(f"Extracted time for departure: {time_str} from {record['timestamp']}")
+                    except Exception as e:
+                        logger.error(f"Error extracting time from {record['timestamp']}: {e}")
+                        time_str = None
+                
+                response_data['departure_record'] = {
+                    'time': time_str,
+                    'address': address['formatted_address'] if address else None
+                }
     
+    # Временная отладка
+    logger.info(f"Final response for user {user.id}: {response_data}")
     return web.json_response(response_data)
 
 

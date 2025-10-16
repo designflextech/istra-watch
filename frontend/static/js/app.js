@@ -10,7 +10,7 @@ import { setYandexMapsApiKey, loadYandexMapsAPI } from './utils/yandex-maps.js';
 import { closeCamera } from './utils/camera.js';
 
 // Импорт экранов работника
-import { showWorkerHome, destroyUserMap } from './screens/worker/home.js';
+import { showWorkerHome, destroyUserMap, refreshTimeLocationRecords } from './screens/worker/home.js';
 import { showRecordForm } from './screens/worker/record-form.js';
 
 // Импорт экранов админа
