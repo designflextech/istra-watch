@@ -4,6 +4,16 @@
     box-sizing: border-box;
 }
 
+:root {
+    /* Основной фон */
+    --main-bg: linear-gradient(0deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.02)), #FFFFFF;
+    --main-border: rgba(0, 0, 0, 0.05);
+    
+    /* Чистый белый (для карточек и модальных окон) */
+    --card-bg: #FFFFFF;
+    --card-border: rgba(0, 0, 0, 0.05);
+}
+
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     background: var(--tg-theme-bg-color, #ffffff);
@@ -725,5 +735,209 @@ body {
 .switch-camera-btn:active {
     transform: scale(0.95);
     background: rgba(255, 255, 255, 0.4);
+}
+
+/* Admin Container */
+.admin-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.admin-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 16px;
+    padding-bottom: 80px; /* Отступ для навигации */
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Admin Navigation */
+.admin-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--card-bg, #ffffff);
+    border-top: 1px solid var(--card-border, rgba(0, 0, 0, 0.05));
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 0;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.05);
+    z-index: 100;
+}
+
+.nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 16px;
+    border: none;
+    background: transparent;
+    color: var(--tg-theme-hint-color, #999999);
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    user-select: none;
+    -webkit-user-select: none;
+    flex: 1;
+    max-width: 120px;
+}
+
+.nav-item.active {
+    color: var(--tg-theme-button-color, #2481cc);
+}
+
+.nav-item:active {
+    transform: scale(0.95);
+    opacity: 0.7;
+}
+
+.nav-icon {
+    font-size: 24px;
+    line-height: 1;
+}
+
+.nav-label {
+    font-size: 11px;
+    font-weight: 500;
+    line-height: 1;
+}
+
+/* Records List */
+.records-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.record-card {
+    background: var(--card-bg, #ffffff);
+    border: 1px solid var(--card-border, rgba(0, 0, 0, 0.05));
+    border-radius: 16px;
+    padding: 16px;
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s, box-shadow 0.2s;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.record-card:active {
+    transform: scale(0.98);
+    opacity: 0.95;
+}
+
+.record-card:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.record-info {
+    margin-bottom: 8px;
+}
+
+.record-type-time {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.record-time {
+    font-size: 14px;
+    color: var(--tg-theme-hint-color, #999999);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.record-address {
+    font-size: 14px;
+    color: var(--tg-theme-text-color, #000000);
+    margin-bottom: 4px;
+}
+
+.record-comment {
+    font-size: 13px;
+    color: var(--tg-theme-hint-color, #999999);
+    font-style: italic;
+    margin-top: 8px;
+}
+
+/* Reports Container */
+.reports-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    text-align: center;
+}
+
+.empty-state-icon {
+    font-size: 64px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-state h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--tg-theme-text-color, #000000);
+}
+
+.empty-state p {
+    font-size: 14px;
+    color: var(--tg-theme-hint-color, #999999);
+}
+
+/* Employee Card updates */
+.employee-card {
+    background: var(--card-bg, #ffffff);
+    border: 1px solid var(--card-border, rgba(0, 0, 0, 0.05));
+}
+
+/* Screen with navigation */
+.screen {
+    display: none;
+    min-height: 100vh;
+    padding: 0; /* Убираем padding для экранов с навигацией */
+}
+
+.screen.active {
+    display: block;
+}
+
+/* Override for screens without navigation */
+#loading-screen,
+#user-screen,
+#record-screen {
+    padding: 16px;
+}
+
+#user-screen {
+    padding-bottom: 16px;
+}
+
+/* Full map adjustments */
+.full-map {
+    width: 100%;
+    height: calc(100vh - 140px); /* Учитываем header и навигацию */
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    background: var(--tg-theme-secondary-bg-color, #f4f4f5);
 }
 

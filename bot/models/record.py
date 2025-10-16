@@ -437,6 +437,7 @@ class Record:
                         r.longitude as record_longitude,
                         r.address_id,
                         r.created_at as record_created_at,
+                        r.photo_url,
                         a.formatted_address,
                         a.latitude as address_latitude,
                         a.longitude as address_longitude,
@@ -466,7 +467,93 @@ class Record:
                         'latitude': row['record_latitude'],
                         'longitude': row['record_longitude'],
                         'address_id': row['address_id'],
-                        'created_at': row['record_created_at'].isoformat() if row['record_created_at'] else None
+                        'created_at': row['record_created_at'].isoformat() if row['record_created_at'] else None,
+                        'has_photo': bool(row.get('photo_url'))
+                    }
+                    
+                    address_data = None
+                    if row['address_id']:
+                        address_data = {
+                            'id': row['address_id'],
+                            'formatted_address': row['formatted_address'],
+                            'latitude': row['address_latitude'],
+                            'longitude': row['address_longitude'],
+                            'country': row['country'],
+                            'city': row['city'],
+                            'street': row['street'],
+                            'building': row['building'],
+                            'created_at': row['address_created_at'].isoformat() if row['address_created_at'] else None
+                        }
+                    
+                    output.append({
+                        'record': record_data,
+                        'address': address_data
+                    })
+                
+                return output
+    
+    @staticmethod
+    def get_by_user_and_date_with_addresses(user_id: int, target_date: date) -> List[Dict[str, Any]]:
+        """
+        Получение записей пользователя за определенную дату с адресами (оптимизировано с JOIN)
+        
+        Args:
+            user_id: ID пользователя
+            target_date: Целевая дата
+            
+        Returns:
+            Список словарей с записями и адресами
+        """
+        with get_db_connection() as conn:
+            with get_db_cursor(conn) as cursor:
+                set_search_path(cursor)
+                records_table = qualified_table_name('records')
+                addresses_table = qualified_table_name('addresses')
+                
+                cursor.execute(
+                    f"""
+                    SELECT 
+                        r.id as record_id,
+                        r.user_id,
+                        r.record_type,
+                        r.timestamp,
+                        r.comment,
+                        r.latitude as record_latitude,
+                        r.longitude as record_longitude,
+                        r.address_id,
+                        r.created_at as record_created_at,
+                        r.photo_url,
+                        a.formatted_address,
+                        a.latitude as address_latitude,
+                        a.longitude as address_longitude,
+                        a.country,
+                        a.city,
+                        a.street,
+                        a.building,
+                        a.created_at as address_created_at
+                    FROM {records_table} r
+                    LEFT JOIN {addresses_table} a ON r.address_id = a.id
+                    WHERE r.user_id = %s
+                    AND DATE(r.timestamp) = %s
+                    ORDER BY r.timestamp DESC
+                    """,
+                    (user_id, target_date)
+                )
+                results = cursor.fetchall()
+                
+                output = []
+                for row in results:
+                    record_data = {
+                        'id': row['record_id'],
+                        'user_id': row['user_id'],
+                        'record_type': row['record_type'],
+                        'timestamp': row['timestamp'].isoformat() if row['timestamp'] else None,
+                        'comment': row['comment'],
+                        'latitude': row['record_latitude'],
+                        'longitude': row['record_longitude'],
+                        'address_id': row['address_id'],
+                        'created_at': row['record_created_at'].isoformat() if row['record_created_at'] else None,
+                        'has_photo': bool(row.get('photo_url'))
                     }
                     
                     address_data = None

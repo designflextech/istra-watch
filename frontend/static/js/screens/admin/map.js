@@ -1,0 +1,108 @@
+/**
+ * Admin Map Screen
+ * Экран карты с местоположениями сотрудников
+ */
+
+import { API } from '../../utils/api.js';
+import { showScreen, formatTime } from '../../utils/helpers.js';
+import { createMap, createAvatarIcon, addPlacemark, fitBounds, isYandexMapsLoaded } from '../../utils/yandex-maps.js';
+
+let fullMapInstance = null;
+
+/**
+ * Показать карту с местоположениями
+ */
+export async function showAdminMap() {
+    showScreen('map-screen');
+    
+    const mapContainer = document.getElementById('full-map');
+    
+    // Уничтожаем старую карту, если есть
+    if (fullMapInstance) {
+        try {
+            if (fullMapInstance.destroy) {
+                fullMapInstance.destroy();
+            }
+        } catch (e) {
+            console.error('Ошибка при уничтожении карты:', e);
+        }
+        fullMapInstance = null;
+    }
+    
+    // Проверяем доступность Yandex Maps API
+    if (!isYandexMapsLoaded()) {
+        mapContainer.innerHTML = '<div class="map-loader"><span>Яндекс Карты недоступны</span></div>';
+        console.error('Yandex Maps API not loaded');
+        return;
+    }
+    
+    // Показываем индикатор загрузки
+    mapContainer.innerHTML = '<div class="map-loader"><div class="loader small"></div><span>Загрузка карты...</span></div>';
+    
+    try {
+        // Получаем текущие местоположения сотрудников
+        const data = await API.getCurrentLocations();
+        const locations = data.locations || [];
+        
+        console.log('Current locations:', locations);
+        
+        if (locations.length === 0) {
+            mapContainer.innerHTML = '<div class="map-loader"><span>Нет сотрудников на месте</span></div>';
+            return;
+        }
+        
+        // Очищаем контейнер
+        mapContainer.innerHTML = '';
+        
+        // Инициализируем карту
+        const firstLocation = locations[0];
+        fullMapInstance = await createMap(
+            'full-map',
+            [firstLocation.latitude, firstLocation.longitude],
+            10,
+            ['zoomControl', 'geolocationControl', 'typeSelector']
+        );
+        
+        // Добавляем метки для каждого сотрудника с аватарками
+        locations.forEach(loc => {
+            const iconOptions = createAvatarIcon(loc.user.avatar_url, loc.user.name);
+            
+            addPlacemark(
+                fullMapInstance,
+                [loc.latitude, loc.longitude],
+                {
+                    balloonContent: `
+                        <strong>${loc.user.name}</strong><br>
+                        ${loc.address || 'Адрес не определен'}<br>
+                        <small>Отметка: ${formatTime(loc.timestamp)}</small>
+                    `
+                },
+                iconOptions
+            );
+        });
+        
+        // Автоматически подстраиваем зум и центр под все метки
+        fitBounds(fullMapInstance, 50);
+        
+    } catch (error) {
+        console.error('Error loading locations:', error);
+        mapContainer.innerHTML = `<div class="map-loader"><span>${error.message}</span></div>`;
+    }
+}
+
+/**
+ * Уничтожить карту (при выходе с экрана)
+ */
+export function destroyAdminMap() {
+    if (fullMapInstance) {
+        try {
+            if (fullMapInstance.destroy) {
+                fullMapInstance.destroy();
+            }
+        } catch (e) {
+            console.error('Ошибка при уничтожении карты:', e);
+        }
+        fullMapInstance = null;
+    }
+}
+

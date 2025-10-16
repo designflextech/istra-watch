@@ -19,17 +19,67 @@
 
     <!-- Экран для администратора: список сотрудников -->
     <div id="admin-screen" class="screen">
-        <div class="header">
-            <h1>Сотрудники</h1>
-            <div class="header-controls">
-                <button id="map-btn" class="map-btn" title="Показать на карте">🗺️</button>
-                <div class="date-picker">
-                    <input type="date" id="date-input" />
+        <div class="admin-container">
+            <div class="admin-content">
+                <div class="header">
+                    <h1>Сотрудники</h1>
+                    <div class="header-controls">
+                        <button id="map-btn" class="map-btn" title="Показать на карте">🗺️</button>
+                        <div class="date-picker">
+                            <input type="date" id="date-input" />
+                        </div>
+                    </div>
                 </div>
+                
+                <div id="employees-list" class="employees-list"></div>
             </div>
+            
+            <!-- Навигация админа -->
+            <nav class="admin-nav">
+                <button class="nav-item active" data-nav="employees">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-label">Сотрудники</span>
+                </button>
+                <button class="nav-item" data-nav="map">
+                    <span class="nav-icon">🗺️</span>
+                    <span class="nav-label">Карта</span>
+                </button>
+                <button class="nav-item" data-nav="reports">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Отчеты</span>
+                </button>
+            </nav>
         </div>
-        
-        <div id="employees-list" class="employees-list"></div>
+    </div>
+
+    <!-- Экран для администратора: записи конкретного сотрудника -->
+    <div id="employee-records-screen" class="screen">
+        <div class="admin-container">
+            <div class="admin-content">
+                <div id="employee-records-header" class="header">
+                    <button id="employee-records-back-btn" class="back-btn">← Назад</button>
+                    <h1>Записи сотрудника</h1>
+                </div>
+                
+                <div id="employee-records-container" class="records-list"></div>
+            </div>
+            
+            <!-- Навигация админа -->
+            <nav class="admin-nav">
+                <button class="nav-item active" data-nav="employees">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-label">Сотрудники</span>
+                </button>
+                <button class="nav-item" data-nav="map">
+                    <span class="nav-icon">🗺️</span>
+                    <span class="nav-label">Карта</span>
+                </button>
+                <button class="nav-item" data-nav="reports">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Отчеты</span>
+                </button>
+            </nav>
+        </div>
     </div>
 
     <!-- Экран для пользователя: главная -->
@@ -130,29 +180,98 @@
 
     <!-- Экран деталей записи -->
     <div id="details-screen" class="screen">
-        <div class="header">
-            <button id="details-back-btn" class="back-btn">← Назад</button>
-            <h1>Детали записи</h1>
+        <div class="admin-container">
+            <div class="admin-content">
+                <div class="header">
+                    <button id="details-back-btn" class="back-btn">← Назад</button>
+                    <h1>Детали записи</h1>
+                </div>
+                
+                <div id="record-details" class="record-details"></div>
+            </div>
+            
+            <!-- Навигация админа -->
+            <nav class="admin-nav">
+                <button class="nav-item active" data-nav="employees">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-label">Сотрудники</span>
+                </button>
+                <button class="nav-item" data-nav="map">
+                    <span class="nav-icon">🗺️</span>
+                    <span class="nav-label">Карта</span>
+                </button>
+                <button class="nav-item" data-nav="reports">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Отчеты</span>
+                </button>
+            </nav>
         </div>
-        
-        <div id="record-details" class="record-details"></div>
     </div>
 
     <!-- Экран карты со всеми местоположениями -->
     <div id="map-screen" class="screen">
-        <div class="header">
-            <button id="map-back-btn" class="back-btn">← Назад</button>
-            <h1>Местоположения</h1>
-        </div>
-        <div id="full-map" class="full-map">
-            <div class="map-loader">
-                <div class="loader small"></div>
-                <span>Загрузка карты...</span>
+        <div class="admin-container">
+            <div class="admin-content">
+                <div class="header">
+                    <button id="map-back-btn" class="back-btn">← Назад</button>
+                    <h1>Местоположения</h1>
+                </div>
+                <div id="full-map" class="full-map">
+                    <div class="map-loader">
+                        <div class="loader small"></div>
+                        <span>Загрузка карты...</span>
+                    </div>
+                </div>
             </div>
+            
+            <!-- Навигация админа -->
+            <nav class="admin-nav">
+                <button class="nav-item" data-nav="employees">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-label">Сотрудники</span>
+                </button>
+                <button class="nav-item active" data-nav="map">
+                    <span class="nav-icon">🗺️</span>
+                    <span class="nav-label">Карта</span>
+                </button>
+                <button class="nav-item" data-nav="reports">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Отчеты</span>
+                </button>
+            </nav>
         </div>
     </div>
 
-    <script src="/static/js/app.js?v=31"></script>
+    <!-- Экран отчетов -->
+    <div id="reports-screen" class="screen">
+        <div class="admin-container">
+            <div class="admin-content">
+                <div class="header">
+                    <h1>Отчеты</h1>
+                </div>
+                
+                <div id="reports-container" class="reports-container"></div>
+            </div>
+            
+            <!-- Навигация админа -->
+            <nav class="admin-nav">
+                <button class="nav-item" data-nav="employees">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-label">Сотрудники</span>
+                </button>
+                <button class="nav-item" data-nav="map">
+                    <span class="nav-icon">🗺️</span>
+                    <span class="nav-label">Карта</span>
+                </button>
+                <button class="nav-item active" data-nav="reports">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Отчеты</span>
+                </button>
+            </nav>
+        </div>
+    </div>
+
+    <script type="module" src="/static/js/app.js"></script>
 </body>
 </html>
 

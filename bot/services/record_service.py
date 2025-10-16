@@ -109,6 +109,21 @@ class RecordService:
         return Record.get_by_user_with_addresses(user_id, limit)
     
     @staticmethod
+    def get_user_records_by_date(user_id: int, target_date: date) -> List[Dict[str, Any]]:
+        """
+        Получение записей конкретного пользователя за определенную дату (оптимизировано с JOIN)
+        
+        Args:
+            user_id: ID пользователя
+            target_date: Целевая дата
+            
+        Returns:
+            Список записей с адресами
+        """
+        # Используем оптимизированный метод с JOIN
+        return Record.get_by_user_and_date_with_addresses(user_id, target_date)
+    
+    @staticmethod
     async def upload_photo(record_id: int, photo_data: bytes, user_id: int) -> Dict[str, Any]:
         """
         Загрузка фотографии к записи

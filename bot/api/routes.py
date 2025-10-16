@@ -440,6 +440,64 @@ async def get_user_today_status(request: web.Request) -> web.Response:
     return web.json_response(response_data)
 
 
+async def get_employee_records(request: web.Request) -> web.Response:
+    """
+    Получение записей конкретного сотрудника за определенную дату
+    
+    Args:
+        request: HTTP запрос с user_id в пути и date в query параметрах
+        
+    Returns:
+        JSON ответ со списком записей сотрудника за день
+    """
+    try:
+        user_id = int(request.match_info.get('user_id'))
+    except (ValueError, TypeError):
+        return web.json_response(
+            {'error': 'Неверный ID пользователя'},
+            status=400
+        )
+    
+    # Получаем дату из параметров запроса
+    date_str = request.query.get('date')
+    
+    if date_str:
+        try:
+            target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return web.json_response(
+                {'error': 'Неверный формат даты. Используйте YYYY-MM-DD'},
+                status=400
+            )
+    else:
+        target_date = date.today()
+    
+    # Проверяем, что дата не старше 1 месяца
+    one_month_ago = date.today() - timedelta(days=30)
+    if target_date < one_month_ago:
+        return web.json_response(
+            {'error': 'Дата не может быть старше 1 месяца'},
+            status=400
+        )
+    
+    # Получаем пользователя
+    user = User.get_by_id(user_id)
+    if not user:
+        return web.json_response(
+            {'error': 'Пользователь не найден'},
+            status=404
+        )
+    
+    # Получаем записи за дату
+    records_data = RecordService.get_user_records_by_date(user_id, target_date)
+    
+    return web.json_response({
+        'date': target_date.isoformat(),
+        'user': user.to_dict(),
+        'records': records_data
+    })
+
+
 def setup_routes(app: web.Application):
     """
     Настройка маршрутов API
@@ -449,6 +507,7 @@ def setup_routes(app: web.Application):
     """
     app.router.add_post('/api/auth', auth_user)
     app.router.add_get('/api/employees', get_employees_status)
+    app.router.add_get('/api/employees/{user_id}/records', get_employee_records)
     app.router.add_get('/api/records/{record_id}', get_record_details)
     app.router.add_post('/api/records', create_record)
     app.router.add_post('/api/records/{record_id}/photo', upload_photo)
