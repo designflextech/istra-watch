@@ -12,6 +12,7 @@
     align-items: center;
     z-index: 1000;
     pointer-events: none;
+    padding-bottom: 34px;
 }
 
 .nav-tabbar {
@@ -60,19 +61,4 @@
     color: var(--text-primary);
 }
 
-.nav-home-indicator {
-    height: 34px;
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: auto;
-}
-
-.home-indicator-bar {
-    width: 139px;
-    height: 5px;
-    background: var(--text-primary);
-    border-radius: var(--radius-full);
-}
 
