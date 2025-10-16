@@ -8,6 +8,18 @@ import { cache } from '../../utils/cache.js';
 import { showScreen, formatTime, formatDateRussian } from '../../utils/helpers.js';
 
 /**
+ * Проверить, является ли дата сегодняшней
+ */
+function isDateToday(dateString) {
+    const today = new Date();
+    const checkDate = new Date(dateString);
+    
+    return today.getFullYear() === checkDate.getFullYear() &&
+           today.getMonth() === checkDate.getMonth() &&
+           today.getDate() === checkDate.getDate();
+}
+
+/**
  * Показать список записей сотрудника
  */
 export async function showEmployeeRecords(userId, date) {
@@ -88,7 +100,18 @@ function renderEmployeeRecords(user, records, date) {
     
     if (!records || records.length === 0) {
         console.log('No records to display');
-        container.innerHTML = profileHTML + `<p style="text-align: center; padding: 20px;">Нет записей за ${new Date(date).toLocaleDateString('ru-RU')}</p>`;
+        
+        // Проверяем, является ли дата сегодняшней
+        const isToday = isDateToday(date);
+        let messageHTML;
+        
+        if (isToday) {
+            messageHTML = `<p class="no-records-today">Сегодня нет отметок</p>`;
+        } else {
+            messageHTML = `<p style="text-align: center; padding: 20px;">Нет записей за ${new Date(date).toLocaleDateString('ru-RU')}</p>`;
+        }
+        
+        container.innerHTML = profileHTML + messageHTML;
         
         // Добавляем обработчик кнопки "Назад"
         document.getElementById('employee-records-back-btn').onclick = () => {

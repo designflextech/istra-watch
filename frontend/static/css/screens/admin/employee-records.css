@@ -170,3 +170,12 @@
     color: var(--text-primary);
 }
 
+/* No Records Today Message */
+.no-records-today {
+    text-align: center;
+    padding: 20px;
+    font-size: var(--font-size-body-m);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-error);
+}
+
