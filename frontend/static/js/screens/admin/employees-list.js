@@ -21,16 +21,6 @@ export async function showEmployeesList() {
     
     // Слушаем изменение даты
     dateInput.onchange = loadEmployees;
-    
-    // Обработчик кнопки карты
-    const mapBtn = document.getElementById('map-btn');
-    if (mapBtn) {
-        mapBtn.onclick = () => {
-            if (window.app && window.app.showAdminMap) {
-                window.app.showAdminMap();
-            }
-        };
-    }
 }
 
 /**

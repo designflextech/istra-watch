@@ -85,25 +85,6 @@ body {
     gap: 12px;
 }
 
-.map-btn {
-    background: var(--tg-theme-button-color, #3390ec);
-    border: none;
-    border-radius: 12px;
-    padding: 8px 12px;
-    font-size: 20px;
-    cursor: pointer;
-    transition: transform 0.2s, opacity 0.2s;
-    line-height: 1;
-}
-
-.map-btn:active {
-    transform: scale(0.95);
-}
-
-.map-btn:hover {
-    opacity: 0.9;
-}
-
 .back-btn {
     background: none;
     border: none;
