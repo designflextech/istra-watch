@@ -113,7 +113,7 @@ export class API {
      * Получить статус сотрудников за дату
      */
     static async getEmployeesStatus(date) {
-        return await this.get('/api/employees', { date }, true, 2 * 60 * 1000); // TTL: 2 минуты
+        return await this.get('/api/employees', { date }, true, 10 * 1000); // TTL: 10 секунд
     }
     
     /**

@@ -25,10 +25,6 @@ export async function showEmployeesList() {
     // Отображаем дату в заголовке
     updateHeaderDate();
     
-    // Инвалидируем кэш при инициализации, чтобы всегда показывать актуальные данные
-    API.invalidateCache('/api/employees', { date: todayString });
-    API.invalidateCacheNamespace('/api/employees');
-    
     // Добавляем обработчик изменения даты только один раз
     if (!dateHandlerInitialized) {
         dateInput.addEventListener('change', async () => {
