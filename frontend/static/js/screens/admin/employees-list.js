@@ -16,11 +16,24 @@ export async function showEmployeesList() {
     const dateInput = document.getElementById('date-input');
     dateInput.value = getTodayString();
     
+    // Отображаем дату в заголовке
+    updateHeaderDate();
+    
     // Загружаем список сотрудников
     await loadEmployees();
+}
+
+/**
+ * Обновить дату в заголовке
+ */
+function updateHeaderDate() {
+    const adminDate = document.getElementById('admin-date');
+    const today = new Date();
+    const options = { day: 'numeric', month: 'long' };
+    const dateStr = today.toLocaleDateString('ru-RU', options);
+    const dayName = today.toLocaleDateString('ru-RU', { weekday: 'long' });
     
-    // Слушаем изменение даты
-    dateInput.onchange = loadEmployees;
+    adminDate.innerHTML = `<span class="highlight">${dateStr},</span> ${dayName}`;
 }
 
 /**
@@ -61,39 +74,67 @@ function renderEmployees(employees, date) {
     
     if (!employees || employees.length === 0) {
         console.log('No employees to display');
-        employeesList.innerHTML = '<p>Нет данных о сотрудниках</p>';
+        employeesList.innerHTML = '<div class="empty-state"><p>Нет данных о сотрудниках</p></div>';
         return;
     }
     
     employeesList.innerHTML = employees.map(emp => {
         const user = emp.user;
-        const record = emp.record;
+        const arrivalRecord = emp.arrival_record;
+        const departureRecord = emp.departure_record;
         
-        let statusBadge = '<span class="status-badge absent">Не на месте</span>';
-        let details = 'Не отмечался';
-        let photoBadge = '';
+        // Avatar with fallback
+        const avatarUrl = user.avatar_url || '';
+        const avatarHTML = avatarUrl 
+            ? `<img src="${avatarUrl}" class="employee-card-avatar" alt="${user.name}">` 
+            : `<div class="employee-card-avatar" style="background: rgba(0,0,0,0.1);"></div>`;
         
-        if (record) {
-            const recordType = record.type === 'arrival' ? 'Пришел' : 'Ушел';
-            const badgeClass = record.type === 'arrival' ? 'arrival' : 'departure';
-            const time = formatTime(record.timestamp);
-            
-            statusBadge = `<span class="status-badge ${badgeClass}">${recordType}</span>`;
-            details = `${recordType}: ${time}`;
-            
-            // Показываем значок камеры если есть фото (lazy loading)
-            if (record.has_photo) {
-                photoBadge = '<span class="photo-badge">📷</span>';
-            }
+        // Time display logic
+        let timeHTML = '';
+        let timeClass = '';
+        
+        if (arrivalRecord && departureRecord) {
+            // Both arrival and departure
+            const arrivalTime = formatTime(arrivalRecord.timestamp);
+            const departureTime = formatTime(departureRecord.timestamp);
+            timeHTML = `
+                <span class="time-text">${arrivalTime}</span>
+                <svg class="time-arrow" width="19" height="8" viewBox="0 0 19 8" fill="none">
+                    <path d="M1 4H18M18 4L15 1M18 4L15 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span class="time-text secondary">${departureTime}</span>
+            `;
+        } else if (arrivalRecord) {
+            // Only arrival
+            const arrivalTime = formatTime(arrivalRecord.timestamp);
+            timeHTML = `
+                <span class="time-text">${arrivalTime}</span>
+                <svg class="time-arrow" width="19" height="8" viewBox="0 0 19 8" fill="none">
+                    <path d="M1 4H18M18 4L15 1M18 4L15 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span class="time-text success">На месте</span>
+            `;
+        } else {
+            // No records
+            timeHTML = '<span class="time-text error">Нет отметок</span>';
+            timeClass = 'error';
         }
         
         return `
-            <div class="employee-card" data-user-id="${user.id}" data-date="${date}">
-                <div class="employee-info">
-                    <span class="employee-name">${user.name}${photoBadge}</span>
-                    ${statusBadge}
+            <div class="card card-clickable employee-card" data-user-id="${user.id}" data-date="${date}">
+                ${avatarHTML}
+                <div class="employee-card-content">
+                    <div class="employee-card-header">
+                        <span class="employee-card-name">${user.name}</span>
+                        <svg class="chevron-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <circle cx="8" cy="8" r="7.5" stroke="currentColor"/>
+                            <path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <div class="employee-card-time ${timeClass}">
+                        ${timeHTML}
+                    </div>
                 </div>
-                <div class="employee-details">${details}</div>
             </div>
         `;
     }).join('');

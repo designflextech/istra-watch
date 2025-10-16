@@ -19,9 +19,8 @@ export async function showRecordForm(recordType, user) {
     currentRecordType = recordType;
     showScreen('record-screen');
     
-    // Устанавливаем заголовок
-    const recordTitle = document.getElementById('record-title');
-    recordTitle.textContent = recordType === 'arrival' ? 'Отметка о приходе' : 'Отметка об уходе';
+    // Отображаем информацию о пользователе
+    renderUserInfo(user);
     
     // Сбрасываем выбранное фото
     resetPhotoSelection();
@@ -34,31 +33,67 @@ export async function showRecordForm(recordType, user) {
 }
 
 /**
+ * Отобразить информацию о пользователе
+ */
+function renderUserInfo(user) {
+    const userName = document.getElementById('record-user-name');
+    const userAvatar = document.getElementById('record-avatar');
+    const userDate = document.getElementById('record-date');
+    
+    userName.textContent = user.name;
+    
+    // Получаем аватар - приоритет: avatar_url из БД, затем photoUrl из Telegram
+    const avatarUrl = user.avatar_url || telegramSDK.initDataParsed?.user?.photoUrl;
+    
+    if (avatarUrl) {
+        userAvatar.src = avatarUrl;
+        userAvatar.onerror = () => {
+            userAvatar.style.display = 'none';
+        };
+    } else {
+        userAvatar.style.display = 'none';
+    }
+    
+    // Устанавливаем дату
+    const today = new Date();
+    const options = { day: 'numeric', month: 'long' };
+    const dateStr = today.toLocaleDateString('ru-RU', options);
+    const dayName = today.toLocaleDateString('ru-RU', { weekday: 'long' });
+    
+    userDate.innerHTML = `<span class="highlight">${dateStr},</span> ${dayName}`;
+}
+
+/**
  * Получить информацию о геолокации и адресе
  */
 async function getLocationInfo() {
-    const locationInfo = document.getElementById('location-info');
-    const addressInfo = document.getElementById('address-info');
+    const addressText = document.querySelector('.address-text');
+    const dateValue = document.getElementById('record-date-value');
+    const timeValue = document.getElementById('record-time-value');
     
     try {
         // Получаем геолокацию
         const location = await getLocation();
         
-        locationInfo.innerHTML = `<span>✅ Местоположение определено</span>`;
+        // Устанавливаем текущую дату и время
+        const now = new Date();
+        dateValue.textContent = now.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' });
+        timeValue.textContent = now.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
         
         // Получаем адрес по координатам
-        addressInfo.innerHTML = '<div class="loader small"></div><span>Определение адреса...</span>';
+        addressText.textContent = 'Определение адреса...';
         
         try {
             const addressData = await API.getAddress(location.latitude, location.longitude);
-            addressInfo.textContent = addressData.formatted_address || `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`;
+            addressText.textContent = addressData.formatted_address || `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`;
         } catch (error) {
             console.error('Ошибка получения адреса:', error);
-            addressInfo.textContent = `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`;
+            addressText.textContent = `${location.latitude.toFixed(6)}, ${location.longitude.toFixed(6)}`;
         }
     } catch (error) {
-        locationInfo.innerHTML = `<span>❌ ${error.message}</span>`;
-        addressInfo.textContent = 'Ошибка определения адреса';
+        addressText.textContent = `Ошибка: ${error.message}`;
+        dateValue.textContent = '--';
+        timeValue.textContent = '--';
     }
 }
 
@@ -66,11 +101,11 @@ async function getLocationInfo() {
  * Установить обработчики формы
  */
 function setupFormHandlers(user) {
-    // Обработчик кнопки "Сделать снимок"
-    const takePhotoBtn = document.getElementById('take-photo-btn');
-    takePhotoBtn.onclick = handleTakePhoto;
+    // Обработчик кнопки добавления фото
+    const addPhotoBtn = document.getElementById('add-photo-btn');
+    addPhotoBtn.onclick = handleTakePhoto;
     
-    // Обработчик выбора фото из галереи (если будет добавлен)
+    // Обработчик выбора фото из галереи
     const photoInput = document.getElementById('photo-input');
     photoInput.onchange = handlePhotoSelect;
     
@@ -93,6 +128,14 @@ function setupFormHandlers(user) {
     cameraModal.onclick = (e) => {
         if (e.target.id === 'camera-modal') {
             handleCloseCamera();
+        }
+    };
+    
+    // Обработчик кнопки "Отмена"
+    const cancelBtn = document.getElementById('cancel-btn');
+    cancelBtn.onclick = () => {
+        if (window.app && window.app.showWorkerHome) {
+            window.app.showWorkerHome(user);
         }
     };
     
@@ -134,18 +177,22 @@ async function handleCapture() {
     const video = document.getElementById('camera-video');
     const canvas = document.getElementById('camera-canvas');
     
+    // Показываем индикатор загрузки
+    document.getElementById('add-photo-btn').style.display = 'none';
+    document.getElementById('photo-loading').style.display = 'flex';
+    
     try {
         const photo = await capturePhoto(video, canvas);
         selectedPhoto = photo;
         
         // Показываем предпросмотр
         const previewUrl = await getPhotoPreview(photo);
-        document.getElementById('preview-image').src = previewUrl;
-        document.getElementById('photo-preview').style.display = 'block';
+        const previewImage = document.getElementById('preview-image');
+        previewImage.src = previewUrl;
+        previewImage.style.display = 'block';
         
-        // Показываем размер файла
-        const sizeMB = getPhotoSizeMB(photo);
-        document.getElementById('photo-size-info').textContent = `Размер: ${sizeMB} MB`;
+        document.getElementById('photo-loading').style.display = 'none';
+        document.getElementById('photo-preview').style.display = 'flex';
         
         console.log('Photo captured:', photo.name, photo.size, 'bytes');
         
@@ -153,6 +200,8 @@ async function handleCapture() {
         handleCloseCamera();
     } catch (error) {
         console.error('Capture error:', error);
+        document.getElementById('photo-loading').style.display = 'none';
+        document.getElementById('add-photo-btn').style.display = 'flex';
         telegramSDK.showPopup('Ошибка', error.message);
     }
 }
@@ -180,16 +229,20 @@ async function handlePhotoSelect(e) {
         return;
     }
     
+    // Показываем индикатор загрузки
+    document.getElementById('add-photo-btn').style.display = 'none';
+    document.getElementById('photo-loading').style.display = 'flex';
+    
     selectedPhoto = file;
     
     // Показываем предпросмотр
     const previewUrl = await getPhotoPreview(file);
-    document.getElementById('preview-image').src = previewUrl;
-    document.getElementById('photo-preview').style.display = 'block';
+    const previewImage = document.getElementById('preview-image');
+    previewImage.src = previewUrl;
+    previewImage.style.display = 'block';
     
-    // Показываем размер файла
-    const sizeMB = getPhotoSizeMB(file);
-    document.getElementById('photo-size-info').textContent = `Размер: ${sizeMB} MB`;
+    document.getElementById('photo-loading').style.display = 'none';
+    document.getElementById('photo-preview').style.display = 'flex';
     
     console.log('Photo selected:', file.name, file.size, 'bytes');
 }
@@ -201,8 +254,9 @@ function resetPhotoSelection() {
     selectedPhoto = null;
     document.getElementById('photo-input').value = '';
     document.getElementById('photo-preview').style.display = 'none';
+    document.getElementById('add-photo-btn').style.display = 'flex';
     document.getElementById('preview-image').src = '';
-    document.getElementById('photo-size-info').textContent = '';
+    document.getElementById('preview-image').style.display = 'none';
 }
 
 /**

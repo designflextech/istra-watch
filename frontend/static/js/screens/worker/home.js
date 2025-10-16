@@ -34,6 +34,7 @@ export async function showWorkerHome(user) {
 function renderUserInfo(user) {
     const userName = document.getElementById('user-name');
     const userAvatar = document.getElementById('user-avatar');
+    const userDate = document.getElementById('user-date');
     
     userName.textContent = user.name;
     
@@ -41,10 +42,22 @@ function renderUserInfo(user) {
     const avatarUrl = user.avatar_url || telegramSDK.initDataParsed?.user?.photoUrl;
     
     if (avatarUrl) {
-        userAvatar.innerHTML = `<img src="${avatarUrl}" alt="Avatar" onerror="this.style.display='none'; this.parentElement.textContent='${user.name.charAt(0)}'; this.parentElement.style.fontSize='32px';">`;
+        userAvatar.src = avatarUrl;
+        userAvatar.onerror = () => {
+            // Fallback если не загрузилась картинка
+            userAvatar.style.display = 'none';
+        };
     } else {
-        userAvatar.textContent = user.name.charAt(0);
+        userAvatar.style.display = 'none';
     }
+    
+    // Устанавливаем дату
+    const today = new Date();
+    const options = { day: 'numeric', month: 'long' };
+    const dateStr = today.toLocaleDateString('ru-RU', options);
+    const dayName = today.toLocaleDateString('ru-RU', { weekday: 'long' });
+    
+    userDate.innerHTML = `<span class="highlight">${dateStr},</span> ${dayName}`;
 }
 
 /**
@@ -129,13 +142,14 @@ async function updateActionButton(user) {
         
         // Определяем, что показывать на основе статуса
         if (status.last_record_type === 'departure') {
-            // Если есть отметка об уходе - скрываем кнопку (карта занимает её место)
+            // Если есть отметка об уходе - скрываем кнопку
             actionBtn.style.display = 'none';
         } else if (status.last_record_type === 'arrival') {
             // Если есть отметка о приходе - показываем кнопку "Я ухожу"
             actionBtn.style.display = 'block';
-            actionBtn.innerHTML = 'Я ухожу';
-            actionBtn.className = 'action-btn departure';
+            actionBtn.textContent = 'Я ухожу';
+            actionBtn.className = 'btn btn-primary';
+            actionBtn.style.width = '195px';
             actionBtn.onclick = () => {
                 // Будет вызван из app.js
                 if (window.app && window.app.showRecordForm) {
@@ -145,8 +159,9 @@ async function updateActionButton(user) {
         } else {
             // Если нет отметок - показываем кнопку "Я на месте"
             actionBtn.style.display = 'block';
-            actionBtn.innerHTML = 'Я на месте';
-            actionBtn.className = 'action-btn arrival';
+            actionBtn.textContent = 'Я на месте';
+            actionBtn.className = 'btn btn-primary';
+            actionBtn.style.width = '195px';
             actionBtn.onclick = () => {
                 // Будет вызван из app.js
                 if (window.app && window.app.showRecordForm) {
@@ -158,8 +173,9 @@ async function updateActionButton(user) {
         console.error('Error updating action button:', error);
         // В случае ошибки показываем кнопку "Я на месте" по умолчанию
         actionBtn.style.display = 'block';
-        actionBtn.innerHTML = 'Я на месте';
-        actionBtn.className = 'action-btn arrival';
+        actionBtn.textContent = 'Я на месте';
+        actionBtn.className = 'btn btn-primary';
+        actionBtn.style.width = '195px';
         actionBtn.onclick = () => {
             if (window.app && window.app.showRecordForm) {
                 window.app.showRecordForm('arrival', user);
