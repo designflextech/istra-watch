@@ -9,6 +9,9 @@ import { createMap, createAvatarIcon, addPlacemark, fitBounds, isYandexMapsLoade
 
 let fullMapInstance = null;
 
+// Координаты центра города Истра
+const ISTRA_CENTER = [55.91, 36.86];
+
 /**
  * Показать карту с местоположениями
  */
@@ -46,20 +49,24 @@ export async function showAdminMap() {
         
         console.log('Current locations:', locations);
         
-        if (locations.length === 0) {
-            mapContainer.innerHTML = '<div class="map-loader"><span>Нет сотрудников на месте</span></div>';
-            return;
-        }
-        
         // Очищаем контейнер
         mapContainer.innerHTML = '';
         
+        // Определяем центр карты
+        let mapCenter = ISTRA_CENTER;
+        let mapZoom = 10;
+        
+        if (locations.length > 0) {
+            // Если есть сотрудники, используем центр первого местоположения
+            mapCenter = [locations[0].latitude, locations[0].longitude];
+            mapZoom = 12;
+        }
+        
         // Инициализируем карту
-        const firstLocation = locations[0];
         fullMapInstance = await createMap(
             'full-map',
-            [firstLocation.latitude, firstLocation.longitude],
-            10,
+            mapCenter,
+            mapZoom,
             ['zoomControl', 'geolocationControl', 'typeSelector']
         );
         
@@ -81,8 +88,10 @@ export async function showAdminMap() {
             );
         });
         
-        // Автоматически подстраиваем зум и центр под все метки
-        fitBounds(fullMapInstance, 50);
+        // Автоматически подстраиваем зум и центр под все метки только если есть сотрудники
+        if (locations.length > 0) {
+            fitBounds(fullMapInstance, 50);
+        }
         
     } catch (error) {
         console.error('Error loading locations:', error);
