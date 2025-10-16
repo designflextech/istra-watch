@@ -1,0 +1,52 @@
+/* ============================================
+   ISTRA WATCH - WORKER HOME SCREEN
+   ============================================ */
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-16);
+    gap: var(--space-12);
+}
+
+.profile-header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-20);
+    padding: 0 var(--space-16);
+    margin-top: 20px; /* Status bar + Safe Area */
+}
+
+.profile-container {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+}
+
+.profile-avatar {
+    width: var(--avatar-md);
+    height: var(--avatar-md);
+    border-radius: var(--radius-full);
+    object-fit: cover;
+    background: var(--bg-input);
+}
+
+.profile-name {
+    font-size: var(--font-size-body-l);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-body);
+    color: var(--text-primary);
+}
+
+.date-text {
+    font-size: var(--font-size-body-m);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-title);
+    color: var(--text-tertiary);
+}
+
+.date-text .highlight {
+    color: var(--text-primary);
+}
+

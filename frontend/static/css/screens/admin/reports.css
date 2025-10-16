@@ -1,0 +1,42 @@
+/* ============================================
+   ISTRA WATCH - REPORTS SCREEN
+   ============================================ */
+
+.reports-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-16);
+    padding: var(--space-16);
+}
+
+.report-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: var(--space-16);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-16);
+}
+
+.report-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+}
+
+.report-title {
+    font-size: var(--font-size-body-l);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-body);
+    color: var(--text-primary);
+}
+
+.report-format {
+    font-size: var(--font-size-body-s);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-title);
+    color: var(--text-disabled);
+}
+
