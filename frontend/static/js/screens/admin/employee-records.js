@@ -27,7 +27,7 @@ async function loadEmployeeRecords(userId, date) {
     
     // Форматируем дату
     const dateObj = new Date(date);
-    dateElement.textContent = formatDateRussian(dateObj);
+    dateElement.innerHTML = formatDateRussian(dateObj);
     
     try {
         console.log('=== Loading Employee Records ===');
@@ -90,8 +90,15 @@ function renderEmployeeRecords(user, records, date) {
         return;
     }
     
+    // Сортируем записи: сначала arrival, потом departure
+    const sortedRecords = [...records].sort((a, b) => {
+        if (a.record.record_type === 'arrival' && b.record.record_type === 'departure') return -1;
+        if (a.record.record_type === 'departure' && b.record.record_type === 'arrival') return 1;
+        return new Date(a.record.timestamp) - new Date(b.record.timestamp);
+    });
+    
     // Временная линия
-    const timelineHTML = records.map((item, index) => {
+    const timelineHTML = sortedRecords.map((item, index) => {
         const record = item.record;
         const address = item.address;
         
@@ -99,7 +106,7 @@ function renderEmployeeRecords(user, records, date) {
         const time = formatTime(record.timestamp);
         const addressText = address ? address.formatted_address : 'Адрес не указан';
         
-        const showLine = index < records.length - 1;
+        const showLine = index < sortedRecords.length - 1;
         
         return `
             <div class="timeline-item" data-record-id="${record.id}">
@@ -108,7 +115,6 @@ function renderEmployeeRecords(user, records, date) {
                 <div class="timeline-card">
                     <div class="timeline-card-content">
                         <span class="timeline-time">${recordType}: ${time}</span>
-                        <span class="separator-dot">•</span>
                         <span class="timeline-address">${addressText}</span>
                     </div>
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

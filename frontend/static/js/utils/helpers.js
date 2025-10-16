@@ -64,6 +64,7 @@ export function formatDate(date) {
 
 /**
  * Форматировать дату по-русски (например: "2 октября, четверг")
+ * Возвращает объект с HTML для правильного стилизования
  */
 export function formatDateRussian(date) {
     if (!date) return '';
@@ -86,7 +87,7 @@ export function formatDateRussian(date) {
     const month = months[date.getMonth()];
     const weekday = weekdays[date.getDay()];
     
-    return `${day} ${month}, ${weekday}`;
+    return `<span class="date-primary">${day} ${month},</span> <span class="date-secondary">${weekday}</span>`;
 }
 
 /**
