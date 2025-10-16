@@ -4,6 +4,7 @@
  */
 
 import { API } from '../../utils/api.js';
+import { cache } from '../../utils/cache.js';
 import { showScreen, formatTime, formatDateRussian } from '../../utils/helpers.js';
 
 /**
@@ -33,6 +34,14 @@ async function loadEmployeeRecords(userId, date) {
         console.log('=== Loading Employee Records ===');
         console.log('User ID:', userId);
         console.log('Date:', date);
+        
+        // Проверяем, есть ли данные в кэше для этой даты
+        const cachedData = cache.get(`/api/employees/${userId}/records`, { date });
+        if (cachedData) {
+            console.log('Using cached data for employee records');
+            renderEmployeeRecords(cachedData.user, cachedData.records, date);
+            return;
+        }
         
         const data = await API.getEmployeeRecords(userId, date);
         
@@ -95,6 +104,16 @@ function renderEmployeeRecords(user, records, date) {
         if (a.record.record_type === 'arrival' && b.record.record_type === 'departure') return -1;
         if (a.record.record_type === 'departure' && b.record.record_type === 'arrival') return 1;
         return new Date(a.record.timestamp) - new Date(b.record.timestamp);
+    });
+    
+    // Кэшируем детали каждой записи для быстрого доступа (TTL: 10 минут)
+    sortedRecords.forEach(item => {
+        const recordDetailsData = {
+            record: item.record,
+            user: user,
+            address: item.address
+        };
+        cache.set(`/api/records/${item.record.id}`, recordDetailsData, {}, 10 * 60 * 1000);
     });
     
     // Временная линия

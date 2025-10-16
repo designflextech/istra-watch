@@ -4,7 +4,11 @@
  */
 
 import { API } from '../../utils/api.js';
+import { cache } from '../../utils/cache.js';
 import { showScreen, getTodayString, formatTime } from '../../utils/helpers.js';
+
+// Флаг для отслеживания инициализации обработчиков
+let dateHandlerInitialized = false;
 
 /**
  * Показать список сотрудников
@@ -14,10 +18,28 @@ export async function showEmployeesList() {
     
     // Устанавливаем сегодняшнюю дату
     const dateInput = document.getElementById('date-input');
-    dateInput.value = getTodayString();
+    const todayString = getTodayString();
+    console.log('Setting today date:', todayString);
+    dateInput.value = todayString;
     
     // Отображаем дату в заголовке
     updateHeaderDate();
+    
+    // Инвалидируем кэш при инициализации, чтобы всегда показывать актуальные данные
+    API.invalidateCache('/api/employees', { date: todayString });
+    API.invalidateCacheNamespace('/api/employees');
+    
+    // Добавляем обработчик изменения даты только один раз
+    if (!dateHandlerInitialized) {
+        dateInput.addEventListener('change', async () => {
+            // Инвалидируем кэш при смене даты
+            API.invalidateCache('/api/employees', { date: dateInput.value });
+            // Также инвалидируем кэш записей всех сотрудников за эту дату
+            API.invalidateCacheNamespace('/api/employees');
+            await loadEmployees();
+        });
+        dateHandlerInitialized = true;
+    }
     
     // Загружаем список сотрудников
     await loadEmployees();
@@ -48,12 +70,48 @@ async function loadEmployees() {
     
     try {
         console.log('=== Loading Employees ===');
-        console.log('Date:', date);
+        console.log('Date from input:', date);
+        console.log('Current date:', new Date().toLocaleDateString('ru-RU'));
+        console.log('Today string:', getTodayString());
         
         const data = await API.getEmployeesStatus(date);
         
         console.log('Response data:', data);
         console.log('Employees count:', data.employees?.length);
+        
+        // Кэшируем данные каждого сотрудника для быстрого доступа
+        if (data.employees) {
+            data.employees.forEach(emp => {
+                // Создаем структуру данных как в API.getEmployeeRecords
+                const employeeData = {
+                    user: emp.user,
+                    records: []
+                };
+                
+                // Добавляем записи, если они есть
+                // В API /api/employees адрес приходит как строка в поле 'address'
+                // Нужно преобразовать в формат объекта для совместимости с /api/employees/{id}/records
+                if (emp.arrival_record) {
+                    employeeData.records.push({
+                        record: emp.arrival_record,
+                        address: emp.arrival_record.address ? {
+                            formatted_address: emp.arrival_record.address
+                        } : null
+                    });
+                }
+                if (emp.departure_record) {
+                    employeeData.records.push({
+                        record: emp.departure_record,
+                        address: emp.departure_record.address ? {
+                            formatted_address: emp.departure_record.address
+                        } : null
+                    });
+                }
+                
+                // Сохраняем в кэш для быстрого доступа при переходе к деталям (TTL: 5 минут)
+                cache.set(`/api/employees/${emp.user.id}/records`, employeeData, { date }, 5 * 60 * 1000);
+            });
+        }
         
         renderEmployees(data.employees, date);
         

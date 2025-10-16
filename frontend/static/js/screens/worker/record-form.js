@@ -275,6 +275,11 @@ async function handleFormSubmit(e, user) {
         
         const comment = document.getElementById('comment').value;
         
+        // ОПТИМИСТИЧНОЕ ОБНОВЛЕНИЕ: Инвалидируем кэш статуса ДО создания записи
+        // чтобы после возврата на главный экран всегда получались свежие данные
+        API.invalidateCache('/api/user/today-status');
+        API.invalidateCache('/api/employees');
+        
         // 1. Создаем запись
         const response = await API.createRecord(
             user.id,
@@ -302,16 +307,15 @@ async function handleFormSubmit(e, user) {
             }
         }
         
-        // 3. Показываем успешное сообщение
+        // 3. Показываем успешное сообщение и сразу переходим на главный экран
+        // ОПТИМИСТИЧНОЕ ОБНОВЛЕНИЕ: Переходим сразу, не дожидаясь закрытия попапа
+        if (window.app && window.app.showWorkerHome) {
+            window.app.showWorkerHome(user);
+        }
+        
         telegramSDK.showPopup(
             'Успех',
-            selectedPhoto ? 'Запись и фото успешно сохранены!' : 'Запись успешно сохранена!',
-            () => {
-                // Возвращаемся на главный экран
-                if (window.app && window.app.showWorkerHome) {
-                    window.app.showWorkerHome(user);
-                }
-            }
+            selectedPhoto ? 'Запись и фото успешно сохранены!' : 'Запись успешно сохранена!'
         );
         
     } catch (error) {

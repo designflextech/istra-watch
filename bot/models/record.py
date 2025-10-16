@@ -666,11 +666,13 @@ class Record:
                     if row['arrival_id']:
                         arrival_record = {
                             'id': row['arrival_id'],
+                            'record_type': 'arrival',
                             'timestamp': row['arrival_timestamp'].isoformat() if row['arrival_timestamp'] else None,
                             'comment': row['arrival_comment'],
                             'latitude': row['arrival_latitude'],
                             'longitude': row['arrival_longitude'],
                             'address': row['arrival_address'],
+                            'photo_url': row['arrival_photo_url'],
                             'has_photo': bool(row['arrival_photo_url'])
                         }
                     
@@ -678,11 +680,13 @@ class Record:
                     if row['departure_id']:
                         departure_record = {
                             'id': row['departure_id'],
+                            'record_type': 'departure',
                             'timestamp': row['departure_timestamp'].isoformat() if row['departure_timestamp'] else None,
                             'comment': row['departure_comment'],
                             'latitude': row['departure_latitude'],
                             'longitude': row['departure_longitude'],
                             'address': row['departure_address'],
+                            'photo_url': row['departure_photo_url'],
                             'has_photo': bool(row['departure_photo_url'])
                         }
                     

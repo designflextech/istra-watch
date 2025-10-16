@@ -70,6 +70,9 @@ class App {
             // Загружаем конфигурацию (включая API ключ Яндекс.Карт)
             await this.loadConfig();
             
+            // Очищаем кэш при инициализации приложения для актуальных данных
+            API.clearCache();
+            
             // Показываем соответствующий экран
             if (this.isAdmin) {
                 console.log('Calling showEmployeesList()');

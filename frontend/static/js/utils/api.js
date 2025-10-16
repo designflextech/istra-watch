@@ -4,6 +4,7 @@
  */
 
 import { telegramSDK } from './telegram.js';
+import { cache } from './cache.js';
 
 const API_URL = window.location.origin;
 
@@ -13,8 +14,20 @@ const API_URL = window.location.origin;
 export class API {
     /**
      * Выполнить GET запрос
+     * @param {boolean} useCache - Использовать кэширование (по умолчанию true)
+     * @param {number} cacheTTL - Время жизни кэша в миллисекундах (null = до конца сессии)
      */
-    static async get(endpoint, params = {}) {
+    static async get(endpoint, params = {}, useCache = true, cacheTTL = null) {
+        // Проверяем кэш
+        if (useCache) {
+            const cached = cache.get(endpoint, params);
+            if (cached) {
+                console.log(`Cache HIT: ${endpoint}`, params);
+                return cached;
+            }
+            console.log(`Cache MISS: ${endpoint}`, params);
+        }
+
         const url = new URL(`${API_URL}${endpoint}`);
         Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
         
@@ -29,6 +42,11 @@ export class API {
         
         if (!response.ok) {
             throw new Error(data.error || 'Ошибка запроса');
+        }
+
+        // Сохраняем в кэш
+        if (useCache) {
+            cache.set(endpoint, data, params, cacheTTL);
         }
         
         return data;
@@ -95,14 +113,14 @@ export class API {
      * Получить статус сотрудников за дату
      */
     static async getEmployeesStatus(date) {
-        return await this.get('/api/employees', { date });
+        return await this.get('/api/employees', { date }, true, 2 * 60 * 1000); // TTL: 2 минуты
     }
     
     /**
      * Получить записи конкретного сотрудника за дату
      */
     static async getEmployeeRecords(userId, date) {
-        return await this.get(`/api/employees/${userId}/records`, { date });
+        return await this.get(`/api/employees/${userId}/records`, { date }, true, 3 * 60 * 1000); // TTL: 3 минуты
     }
     
     /**
@@ -154,6 +172,27 @@ export class API {
      */
     static async getUserTodayStatus() {
         return await this.get('/api/user/today-status');
+    }
+
+    /**
+     * Инвалидировать кэш
+     */
+    static invalidateCache(endpoint, params = {}) {
+        cache.remove(endpoint, params);
+    }
+
+    /**
+     * Инвалидировать кэш по пространству имен
+     */
+    static invalidateCacheNamespace(namespace) {
+        cache.clearNamespace(namespace);
+    }
+
+    /**
+     * Очистить весь кэш
+     */
+    static clearCache() {
+        cache.clear();
     }
 }
 

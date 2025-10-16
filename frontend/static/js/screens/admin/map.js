@@ -40,8 +40,8 @@ export async function showAdminMap() {
     mapContainer.innerHTML = '<div class="map-loader"><div class="loader small"></div><span>Загрузка карты...</span></div>';
     
     try {
-        // Получаем текущие местоположения сотрудников
-        const data = await API.getCurrentLocations();
+        // Получаем текущие местоположения сотрудников (с кэшем на 30 секунд)
+        const data = await API.get('/api/current-locations', {}, true, 30000);
         const locations = data.locations || [];
         
         console.log('Current locations:', locations);
