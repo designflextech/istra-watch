@@ -68,6 +68,11 @@
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    color: var(--text-primary);
+}
+
+.modal-close-btn:active {
+    opacity: 0.6;
 }
 
 .modal-body {
@@ -76,9 +81,108 @@
     gap: var(--space-24);
 }
 
+/* Address Container */
+.address-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.address-info-modal {
+    background: var(--bg-success);
+    border-radius: var(--radius-sm);
+    padding: var(--space-16);
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    min-height: 56px;
+}
+
+.address-info-modal .address-icon {
+    flex-shrink: 0;
+    color: var(--text-primary);
+}
+
+.address-text-modal {
+    flex: 1;
+    font-size: var(--font-size-body-l);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-body);
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* DateTime Container */
+.datetime-container-modal {
+    background: linear-gradient(90deg, var(--bg-input) 0%, var(--bg-input) 100%), var(--bg-card);
+    border-radius: var(--radius-sm);
+    padding: var(--space-16);
+    display: flex;
+    gap: 42px;
+    min-height: 88px;
+}
+
+.datetime-item-modal {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+}
+
+.datetime-label-modal {
+    font-size: var(--font-size-body-l);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-body);
+    color: var(--text-secondary);
+}
+
+.datetime-value-modal {
+    font-size: var(--font-size-body-l);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-body);
+    color: var(--text-primary);
+}
+
+.datetime-divider-modal {
+    width: 1px;
+    background: var(--border-divider);
+}
+
+/* Comment and Photo Container */
+.comment-photo-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+}
+
+.comment-container-modal {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+}
+
+.comment-label-modal {
+    font-size: var(--font-size-body-l);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-body);
+    color: var(--text-secondary);
+}
+
+.comment-text-modal {
+    font-size: var(--font-size-body-l);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-body);
+    color: var(--text-primary);
+}
+
 .record-photo-full {
     width: 100%;
+    height: 311px;
     border-radius: var(--radius-sm);
     display: block;
+    object-fit: cover;
+    cursor: pointer;
 }
 

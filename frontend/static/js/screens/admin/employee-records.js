@@ -4,7 +4,7 @@
  */
 
 import { API } from '../../utils/api.js';
-import { showScreen, formatTime } from '../../utils/helpers.js';
+import { showScreen, formatTime, formatDateRussian } from '../../utils/helpers.js';
 
 /**
  * Показать список записей сотрудника
@@ -21,10 +21,13 @@ export async function showEmployeeRecords(userId, date) {
  */
 async function loadEmployeeRecords(userId, date) {
     const container = document.getElementById('employee-records-container');
-    const header = document.getElementById('employee-records-header');
+    const dateElement = document.getElementById('employee-records-date');
     
     container.innerHTML = '<div class="loader"></div>';
-    header.innerHTML = '<h1>Записи сотрудника</h1>';
+    
+    // Форматируем дату
+    const dateObj = new Date(date);
+    dateElement.textContent = formatDateRussian(dateObj);
     
     try {
         console.log('=== Loading Employee Records ===');
@@ -53,12 +56,74 @@ function renderEmployeeRecords(user, records, date) {
     console.log('Records:', records);
     
     const container = document.getElementById('employee-records-container');
-    const header = document.getElementById('employee-records-header');
     
-    // Обновляем заголовок
-    header.innerHTML = `
-        <button id="employee-records-back-btn" class="back-btn">← Назад</button>
-        <h1>${user.name}</h1>
+    // Определяем статус
+    let status = 'На месте';
+    if (records && records.length > 0) {
+        const lastRecord = records[records.length - 1].record;
+        if (lastRecord.record_type === 'departure') {
+            status = 'Не на месте';
+        }
+    }
+    
+    // Профиль сотрудника
+    const avatarUrl = user.avatar_url || 'https://via.placeholder.com/103';
+    
+    let profileHTML = `
+        <div class="employee-profile">
+            <img src="${avatarUrl}" alt="${user.name}" class="employee-profile-avatar">
+            <h1 class="employee-profile-name">${user.name}</h1>
+            <p class="employee-profile-status">${status}</p>
+        </div>
+    `;
+    
+    if (!records || records.length === 0) {
+        console.log('No records to display');
+        container.innerHTML = profileHTML + `<p style="text-align: center; padding: 20px;">Нет записей за ${new Date(date).toLocaleDateString('ru-RU')}</p>`;
+        
+        // Добавляем обработчик кнопки "Назад"
+        document.getElementById('employee-records-back-btn').onclick = () => {
+            if (window.app && window.app.showEmployeesList) {
+                window.app.showEmployeesList();
+            }
+        };
+        return;
+    }
+    
+    // Временная линия
+    const timelineHTML = records.map((item, index) => {
+        const record = item.record;
+        const address = item.address;
+        
+        const recordType = record.record_type === 'arrival' ? 'Пришел' : 'Ушел';
+        const time = formatTime(record.timestamp);
+        const addressText = address ? address.formatted_address : 'Адрес не указан';
+        
+        const showLine = index < records.length - 1;
+        
+        return `
+            <div class="timeline-item" data-record-id="${record.id}">
+                <div class="timeline-dot"></div>
+                ${showLine ? '<div class="timeline-line"></div>' : ''}
+                <div class="timeline-card">
+                    <div class="timeline-card-content">
+                        <span class="timeline-time">${recordType}: ${time}</span>
+                        <span class="separator-dot">•</span>
+                        <span class="timeline-address">${addressText}</span>
+                    </div>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                        <path d="M6 12L10 8L6 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    container.innerHTML = `
+        ${profileHTML}
+        <div class="timeline">
+            ${timelineHTML}
+        </div>
     `;
     
     // Добавляем обработчик кнопки "Назад"
@@ -68,39 +133,10 @@ function renderEmployeeRecords(user, records, date) {
         }
     };
     
-    if (!records || records.length === 0) {
-        console.log('No records to display');
-        container.innerHTML = `<p>Нет записей за ${new Date(date).toLocaleDateString('ru-RU')}</p>`;
-        return;
-    }
-    
-    container.innerHTML = records.map(item => {
-        const record = item.record;
-        const address = item.address;
-        
-        const recordType = record.record_type === 'arrival' ? 'Приход' : 'Уход';
-        const badgeClass = record.record_type === 'arrival' ? 'arrival' : 'departure';
-        const time = formatTime(record.timestamp);
-        const photoBadge = record.has_photo ? '<span class="photo-badge">📷</span>' : '';
-        
-        return `
-            <div class="record-card" data-record-id="${record.id}">
-                <div class="record-info">
-                    <div class="record-type-time">
-                        <span class="status-badge ${badgeClass}">${recordType}</span>
-                        <span class="record-time">${time}${photoBadge}</span>
-                    </div>
-                </div>
-                ${address ? `<div class="record-address">${address.formatted_address}</div>` : ''}
-                ${record.comment ? `<div class="record-comment">${record.comment}</div>` : ''}
-            </div>
-        `;
-    }).join('');
-    
     // Добавляем обработчики кликов после рендеринга
-    document.querySelectorAll('.record-card').forEach(card => {
-        card.onclick = () => {
-            const recordId = parseInt(card.dataset.recordId);
+    document.querySelectorAll('.timeline-item').forEach(item => {
+        item.onclick = () => {
+            const recordId = parseInt(item.dataset.recordId);
             
             if (window.app && window.app.showRecordDetails) {
                 window.app.showRecordDetails(recordId);

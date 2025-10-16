@@ -2,12 +2,57 @@
    ISTRA WATCH - EMPLOYEE RECORDS SCREEN
    ============================================ */
 
+/* Navigation Bar */
+.employee-records-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 88px 16px 20px;
+    background: linear-gradient(90deg, var(--bg-page) 0%, var(--bg-page) 100%), var(--bg-main);
+}
+
+.icon-btn-back {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
+}
+
+.icon-btn-back:active {
+    opacity: 0.6;
+}
+
+.date-text {
+    font-size: var(--font-size-body-m);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-title);
+}
+
+.date-text::first-letter {
+    color: var(--text-primary);
+}
+
+/* Content Container */
+.employee-records-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-24);
+    padding: 0 16px 24px;
+}
+
+/* Employee Profile */
 .employee-profile {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: var(--space-12);
-    padding: var(--space-16);
+    padding: 0 var(--space-16);
 }
 
 .employee-profile-avatar {
@@ -40,20 +85,11 @@
     position: relative;
 }
 
-.timeline-line {
-    position: absolute;
-    left: 3px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 1px;
-    height: 46px;
-    background: var(--text-primary);
-}
-
 .timeline-item {
     display: flex;
     gap: var(--space-8);
-    align-items: center;
+    align-items: flex-start;
+    position: relative;
 }
 
 .timeline-dot {
@@ -62,6 +98,18 @@
     border-radius: 50%;
     background: var(--text-primary);
     flex-shrink: 0;
+    margin-top: 20px; /* Center with card */
+    z-index: 2;
+}
+
+.timeline-line {
+    position: absolute;
+    left: 3px;
+    top: 27px;
+    width: 1px;
+    height: 46px;
+    background: var(--text-primary);
+    z-index: 1;
 }
 
 .timeline-card {
@@ -93,6 +141,15 @@
     font-weight: var(--font-weight-semibold);
     line-height: var(--line-height-title);
     color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.separator-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--text-primary);
+    flex-shrink: 0;
 }
 
 .timeline-address {
@@ -104,5 +161,10 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.timeline-card svg {
+    flex-shrink: 0;
+    color: var(--text-primary);
 }
 

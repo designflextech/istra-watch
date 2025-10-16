@@ -63,6 +63,33 @@ export function formatDate(date) {
 }
 
 /**
+ * Форматировать дату по-русски (например: "2 октября, четверг")
+ */
+export function formatDateRussian(date) {
+    if (!date) return '';
+    
+    if (typeof date === 'string') {
+        date = new Date(date);
+    }
+    
+    const months = [
+        'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+        'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+    ];
+    
+    const weekdays = [
+        'воскресенье', 'понедельник', 'вторник', 'среда', 
+        'четверг', 'пятница', 'суббота'
+    ];
+    
+    const day = date.getDate();
+    const month = months[date.getMonth()];
+    const weekday = weekdays[date.getDay()];
+    
+    return `${day} ${month}, ${weekday}`;
+}
+
+/**
  * Форматировать время
  */
 export function formatTime(date) {
