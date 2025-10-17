@@ -5,6 +5,37 @@
 
 import { showScreen, showError } from '../../utils/helpers.js';
 
+// Ключ для хранения состояния генерации отчета
+const REPORT_GENERATION_KEY = 'istra_report_generating';
+
+/**
+ * Проверить, идет ли генерация отчета
+ */
+function isReportGenerating() {
+    try {
+        const state = localStorage.getItem(REPORT_GENERATION_KEY);
+        return state === 'true';
+    } catch (e) {
+        console.error('Error checking report generation state:', e);
+        return false;
+    }
+}
+
+/**
+ * Установить состояние генерации отчета
+ */
+function setReportGenerating(isGenerating) {
+    try {
+        if (isGenerating) {
+            localStorage.setItem(REPORT_GENERATION_KEY, 'true');
+        } else {
+            localStorage.removeItem(REPORT_GENERATION_KEY);
+        }
+    } catch (e) {
+        console.error('Error setting report generation state:', e);
+    }
+}
+
 /**
  * Показать экран отчетов
  */
@@ -77,8 +108,18 @@ export function showReports() {
         </div>
     `;
     
+    // Проверяем, идет ли генерация отчета
+    const button = document.getElementById('generate-report-btn');
+    const statusDiv = document.getElementById('report-status');
+    
+    if (isReportGenerating()) {
+        button.disabled = true;
+        button.textContent = '⏳ Генерация...';
+        statusDiv.innerHTML = '<p class="status-loading">Генерируется отчет, пожалуйста подождите...</p>';
+    }
+    
     // Обработчик генерации отчета
-    document.getElementById('generate-report-btn').addEventListener('click', generateReport);
+    button.addEventListener('click', generateReport);
 }
 
 /**
@@ -101,10 +142,11 @@ async function generateReport() {
         return;
     }
     
-    // Блокируем кнопку
+    // Блокируем кнопку и сохраняем состояние
     button.disabled = true;
     button.textContent = '⏳ Генерация...';
     statusDiv.innerHTML = '<p class="status-loading">Генерируется отчет, пожалуйста подождите...</p>';
+    setReportGenerating(true);
     
     try {
         // Формируем URL с параметрами
@@ -135,9 +177,10 @@ async function generateReport() {
             </p>
         `;
         
-        // Разблокируем кнопку
+        // Разблокируем кнопку и очищаем состояние
         button.disabled = false;
         button.textContent = '📄 Сгенерировать отчет';
+        setReportGenerating(false);
         
         // Опционально: показываем уведомление через Telegram WebApp
         if (window.Telegram.WebApp.showAlert) {
@@ -149,9 +192,10 @@ async function generateReport() {
         statusDiv.innerHTML = `<p class="status-error">❌ Ошибка: ${error.message}</p>`;
         showError(error.message);
         
-        // Разблокируем кнопку
+        // Разблокируем кнопку и очищаем состояние
         button.disabled = false;
         button.textContent = '📄 Сгенерировать отчет';
+        setReportGenerating(false);
     }
 }
 
