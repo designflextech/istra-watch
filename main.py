@@ -6,6 +6,7 @@ from telegram.ext import (
     Application,
     CommandHandler,
     MessageHandler,
+    CallbackQueryHandler,
     filters
 )
 
@@ -18,7 +19,10 @@ from bot.config import (
 from bot.handlers.start_handler import start_handler
 from bot.handlers.upload_excel_handler import (
     upload_excel_button_handler,
-    excel_file_handler
+    excel_file_handler,
+    add_employees_handler,
+    download_template_handler,
+    cancel_waiting_handler
 )
 from bot.api.routes import setup_routes
 from bot.api.middleware import setup_middlewares
@@ -45,19 +49,23 @@ async def setup_application() -> Application:
     # Регистрируем обработчики
     application.add_handler(CommandHandler("start", start_handler))
     
-    # Обработчик кнопки загрузки Excel
-    application.add_handler(
-        MessageHandler(
-            filters.Text(["📤 Загрузить сотрудников"]),
-            upload_excel_button_handler
-        )
-    )
+    # Обработчики inline кнопок администратора
+    application.add_handler(CallbackQueryHandler(add_employees_handler, pattern="^add_employees$"))
+    application.add_handler(CallbackQueryHandler(download_template_handler, pattern="^download_template$"))
     
-    # Обработчик файлов Excel
+    # Обработчик файлов Excel (только когда ожидаем файл)
     application.add_handler(
         MessageHandler(
             filters.Document.FileExtension("xlsx"),
             excel_file_handler
+        )
+    )
+    
+    # Обработчик для сброса состояния ожидания (любые другие сообщения)
+    application.add_handler(
+        MessageHandler(
+            filters.TEXT,
+            cancel_waiting_handler
         )
     )
     

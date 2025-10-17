@@ -2,7 +2,7 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 from bot.config import is_admin
-from bot.keyboards.admin_keyboard import get_admin_keyboard, get_admin_reply_keyboard
+from bot.keyboards.admin_keyboard import get_admin_keyboard
 from bot.keyboards.user_keyboard import get_user_keyboard
 from bot.services.user_service import UserService
 
@@ -24,18 +24,13 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if is_admin(user.id):
         message = (
             f"Добро пожаловать, {user.first_name}! 👋\n\n"
-            "Вы вошли как администратор.\n\n"
-            "Доступные действия:\n"
-            "📤 Загрузить сотрудников - используйте кнопку ниже\n"
-            "📱 Открыть мини-приложение - нажмите на кнопку для просмотра статуса сотрудников"
+            "🛡️Вы вошли как администратор\n\n"
+            "Это Бот, с помощью которого вы можете отслеживать сотрудников прямо в Мини-приложении\n\n"
+            "📤 Шаг 1. Загрузите список сотрудников — используйте кнопку ниже, чтобы добавить их в систему\n"
+            "📱 Шаг 2. Откройте Мини-приложение — следите за статусом сотрудников в удобном интерфейсе"
         )
-        # Отправляем сообщение с inline клавиатурой для Web App
+        # Отправляем сообщение с inline клавиатурой
         await update.message.reply_text(message, reply_markup=get_admin_keyboard())
-        # И устанавливаем reply клавиатуру для загрузки файлов
-        await update.message.reply_text(
-            "Используйте кнопку ниже для загрузки файла:",
-            reply_markup=get_admin_reply_keyboard()
-        )
     else:
         # Проверяем, существует ли пользователь в базе
         db_user = UserService.get_user_by_telegram_id(user.id)

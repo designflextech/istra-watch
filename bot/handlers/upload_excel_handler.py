@@ -1,14 +1,15 @@
 """Обработчик загрузки Excel файла"""
 import os
 import tempfile
-from telegram import Update
+from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import ContextTypes
 from bot.config import is_admin
 from bot.services.user_service import UserService
 
 
-# Состояние для ожидания файла
+# Состояния для ожидания файла
 WAITING_FOR_FILE = 'waiting_for_excel'
+WAITING_FOR_TEMPLATE = 'waiting_for_template'
 
 
 async def upload_excel_button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -91,22 +92,9 @@ async def excel_file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
         
         # Формируем сообщение с результатами
         if result['success']:
-            message = (
-                "✅ Файл успешно обработан!\n\n"
-                f"📊 Статистика:\n"
-                f"➕ Добавлено: {result['added']}\n"
-                f"⏭ Пропущено (уже существуют): {result['skipped']}\n"
-            )
-            
-            if result['errors']:
-                message += f"\n⚠️ Ошибки ({len(result['errors'])}):\n"
-                for error in result['errors'][:5]:  # Показываем первые 5 ошибок
-                    message += f"• {error}\n"
-                
-                if len(result['errors']) > 5:
-                    message += f"... и еще {len(result['errors']) - 5} ошибок\n"
+            message = "✅ Сотрудники добавлены!\n\nТеперь у них есть доступ к Боту и Мини-приложению"
         else:
-            message = f"❌ Ошибка при обработке файла:\n{result['error']}"
+            message = "❌ Ошибка!\nПроверьте, правильно ли заполнена таблица"
         
         await update.message.reply_text(message)
         
@@ -116,4 +104,101 @@ async def excel_file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
     finally:
         # Сбрасываем состояние
         context.user_data[WAITING_FOR_FILE] = False
+
+
+async def add_employees_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Обработчик нажатия inline кнопки "Добавить сотрудников"
+    
+    Args:
+        update: Объект обновления Telegram
+        context: Контекст бота
+    """
+    query = update.callback_query
+    await query.answer()
+    
+    user = query.from_user
+    
+    if not user or not is_admin(user.id):
+        await query.edit_message_text("У вас нет доступа к этой функции.")
+        return
+    
+    message = (
+        "📤 Добавить сотрудников\n\n"
+        "Шаг 1. Скачайте шаблон по кнопке «📄 Скачать шаблон»\n"
+        "Шаг 2. Заполните шаблон по примеру\n"
+        "Шаг 3. Отправьте файл Excel (.xlsx) в диалог с ботом"
+    )
+    
+    # Импортируем клавиатуру здесь, чтобы избежать циклических импортов
+    from bot.keyboards.admin_keyboard import get_template_keyboard
+    
+    await query.edit_message_text(message, reply_markup=get_template_keyboard())
+
+
+async def download_template_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Обработчик нажатия inline кнопки "Скачать шаблон"
+    
+    Args:
+        update: Объект обновления Telegram
+        context: Контекст бота
+    """
+    query = update.callback_query
+    await query.answer()
+    
+    user = query.from_user
+    
+    if not user or not is_admin(user.id):
+        await query.edit_message_text("У вас нет доступа к этой функции.")
+        return
+    
+    # Устанавливаем состояние ожидания файла
+    context.user_data[WAITING_FOR_FILE] = True
+    
+    message = (
+        "📄 Шаблон для загрузки сотрудников\n\n"
+        "Файл содержит:\n"
+        " ✓ Правильную структуру столбцов\n"
+        " ✓ Примеры заполнения (удалите перед загрузкой)\n\n"
+        "👇 Заполните данные и отправьте файл (.xlsx) в этот чат"
+    )
+    
+    # Путь к файлу шаблона
+    template_path = os.path.join(os.path.dirname(__file__), "..", "Сотрудники (Истра).xlsx")
+    
+    try:
+        # Отправляем файл
+        with open(template_path, 'rb') as template_file:
+            await query.message.reply_document(
+                document=template_file,
+                filename="Сотрудники (Истра).xlsx",
+                caption=message
+            )
+    except FileNotFoundError:
+        await query.edit_message_text("❌ Файл шаблона не найден. Обратитесь к разработчику.")
+
+
+async def cancel_waiting_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """
+    Обработчик для сброса состояния ожидания файла при получении любого другого сообщения
+    
+    Args:
+        update: Объект обновления Telegram
+        context: Контекст бота
+    """
+    user = update.effective_user
+    
+    if not user or not is_admin(user.id):
+        return
+    
+    # Если мы ожидаем файл, но получили что-то другое - сбрасываем состояние
+    if context.user_data.get(WAITING_FOR_FILE):
+        context.user_data[WAITING_FOR_FILE] = False
+        # Возвращаем основную клавиатуру
+        from bot.keyboards.admin_keyboard import get_admin_keyboard
+        await update.message.reply_text(
+            "Ожидание файла отменено. Выберите действие:",
+            reply_markup=get_admin_keyboard()
+        )
 

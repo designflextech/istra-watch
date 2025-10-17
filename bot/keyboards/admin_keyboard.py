@@ -8,29 +8,26 @@ def get_admin_keyboard() -> InlineKeyboardMarkup:
     Получение клавиатуры для администраторов
     
     Returns:
-        Inline клавиатура с кнопкой для открытия мини-приложения
+        Inline клавиатура с кнопками для действий
     """
     keyboard = [
-        [InlineKeyboardButton(text="📱 Открыть мини-приложение", web_app=WebAppInfo(url=MINI_APP_URL))]
+        [InlineKeyboardButton(text="📤 Добавить сотрудников", callback_data="add_employees")],
+        [InlineKeyboardButton(text="📱 Открыть Мини-приложение", web_app=WebAppInfo(url=MINI_APP_URL))]
     ]
     
     return InlineKeyboardMarkup(keyboard)
 
 
-def get_admin_reply_keyboard() -> ReplyKeyboardMarkup:
+def get_template_keyboard() -> InlineKeyboardMarkup:
     """
-    Получение обычной клавиатуры для администраторов (для загрузки файлов)
+    Получение клавиатуры с кнопкой скачать шаблон
     
     Returns:
-        Reply клавиатура с кнопками для действий
+        Inline клавиатура с кнопкой скачать шаблон
     """
     keyboard = [
-        [KeyboardButton(text="📤 Загрузить сотрудников")]
+        [InlineKeyboardButton(text="📄 Скачать шаблон", callback_data="download_template")]
     ]
     
-    return ReplyKeyboardMarkup(
-        keyboard,
-        resize_keyboard=True,
-        one_time_keyboard=False
-    )
+    return InlineKeyboardMarkup(keyboard)
 
