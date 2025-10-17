@@ -1,12 +1,9 @@
-"""Генератор PDF отчетов о дисциплине сотрудников (WeasyPrint с эмодзи)"""
+"""Генератор PDF отчетов о дисциплине сотрудников"""
 from datetime import datetime, date, time, timedelta
 from typing import List, Dict, Any, Optional, Tuple
 from io import BytesIO
-import os
-from pathlib import Path
 
-from weasyprint import HTML, CSS
-from weasyprint.text.fonts import FontConfiguration
+from weasyprint import HTML
 
 from bot.utils.database import get_db_connection, get_db_cursor, set_search_path, qualified_table_name
 from bot.config import TELEGRAM_ADMIN_IDS
@@ -23,57 +20,6 @@ class DisciplineReportGenerator:
         self.date_from = date_from
         self.date_to = date_to
         self.report_date = datetime.now()
-        self.fonts_path = self._get_fonts_path()
-    
-    def _get_fonts_path(self) -> Optional[Path]:
-        """Получение пути к директории шрифтов"""
-        # Попробуем найти директорию fonts относительно корня проекта
-        current_file = Path(__file__)
-        project_root = current_file.parent.parent.parent  # bot/services/ -> bot/ -> root/
-        fonts_dir = project_root / 'fonts'
-        
-        if fonts_dir.exists() and (fonts_dir / 'DejaVuSans.ttf').exists():
-            return fonts_dir
-        return None
-    
-    def _get_font_face_css_object(self) -> Optional[CSS]:
-        """Создание CSS объекта с регистрацией шрифтов через @font-face"""
-        if not self.fonts_path:
-            print("⚠️  Шрифты не найдены, будет использован системный шрифт")
-            return None
-        
-        # Получаем абсолютные пути к шрифтам
-        font_regular = self.fonts_path / 'DejaVuSans.ttf'
-        font_bold = self.fonts_path / 'DejaVuSans-Bold.ttf'
-        
-        if not font_regular.exists():
-            print(f"⚠️  Основной шрифт не найден: {font_regular}")
-            return None
-        
-        print(f"✓ Используем шрифты из: {self.fonts_path}")
-        
-        # Создаем CSS с относительными путями
-        css_content = f"""
-        @font-face {{
-            font-family: 'DejaVu Sans';
-            src: url('{font_regular.name}') format('truetype');
-            font-weight: normal;
-            font-style: normal;
-        }}
-        """
-        
-        if font_bold.exists():
-            css_content += f"""
-        @font-face {{
-            font-family: 'DejaVu Sans';
-            src: url('{font_bold.name}') format('truetype');
-            font-weight: bold;
-            font-style: normal;
-        }}
-        """
-        
-        # Возвращаем CSS объект с базовым URL на директорию шрифтов
-        return CSS(string=css_content, base_url=str(self.fonts_path))
         
     def _get_work_days_count(self) -> int:
         """Подсчет рабочих дней"""
@@ -160,6 +106,10 @@ class DisciplineReportGenerator:
                 if departure_time < self.WORK_END:
                     early_leave_count += 1
         
+        # Подсчет пропусков (рабочих дней без отметки прихода)
+        work_days = self._get_work_days_count()
+        missed_days = work_days - len(arrivals)
+        
         return {
             'name': employee['name'],
             'total_records': len(records),
@@ -167,6 +117,7 @@ class DisciplineReportGenerator:
             'avg_departure': self._calculate_average_time(departures) if departures else None,
             'late_count': late_count,
             'early_leave_count': early_leave_count,
+            'missed_days': missed_days,
             'photo_count': photo_count,
             'comment_count': comment_count,
             'arrivals': arrivals,
@@ -188,7 +139,7 @@ class DisciplineReportGenerator:
         work_days = self._get_work_days_count()
         
         all_arrivals, all_departures = [], []
-        total_late, total_early_leave, total_photos, total_comments = 0, 0, 0, 0
+        total_late, total_early_leave, total_photos, total_comments, total_missed = 0, 0, 0, 0, 0
         
         for stats in employees_stats:
             all_arrivals.extend(stats['arrivals'])
@@ -197,6 +148,7 @@ class DisciplineReportGenerator:
             total_early_leave += stats['early_leave_count']
             total_photos += stats['photo_count']
             total_comments += stats['comment_count']
+            total_missed += stats['missed_days']
         
         return {
             'total_employees': total_employees,
@@ -205,14 +157,20 @@ class DisciplineReportGenerator:
             'avg_departure': self._calculate_average_time(all_departures) if all_departures else None,
             'total_late': total_late,
             'total_early_leave': total_early_leave,
+            'total_missed': total_missed,
             'total_photos': total_photos,
             'avg_comments_per_employee_per_day': round(total_comments / (total_employees * work_days), 1) if total_employees and work_days else 0
         }
     
     def _get_top_employees(self, employees_stats: List[Dict[str, Any]], count: int = 3) -> Tuple[List[str], List[str]]:
-        sorted_by_late = sorted(employees_stats, key=lambda x: x['late_count'])
-        punctual = [s['name'] for s in sorted_by_late[:count] if s['arrivals']]
-        late = [s['name'] for s in sorted_by_late[-count:][::-1] if s['late_count'] > 0]
+        # Топ пунктуальных: меньше опозданий и меньше пропусков
+        sorted_punctual = sorted(employees_stats, key=lambda x: (x['late_count'], x['missed_days']))
+        punctual = [s['name'] for s in sorted_punctual[:count] if s['arrivals']]
+        
+        # Топ опаздывающих: больше опозданий и больше пропусков
+        sorted_late = sorted(employees_stats, key=lambda x: (x['late_count'], x['missed_days']), reverse=True)
+        late = [s['name'] for s in sorted_late[:count] if s['late_count'] > 0 or s['missed_days'] > 0]
+        
         return punctual, late
     
     def _calculate_avg_late_and_early(self, employees_stats: List[Dict[str, Any]]) -> Tuple[int, int]:
@@ -232,16 +190,92 @@ class DisciplineReportGenerator:
         return (sum(late_minutes) // len(late_minutes) if late_minutes else 0,
                 sum(early_minutes) // len(early_minutes) if early_minutes else 0)
     
+    def _get_recommendation(self, summary_stats: Dict[str, Any]) -> str:
+        """Выбор наиболее подходящей рекомендации из 10 вариантов"""
+        total_employees = summary_stats['total_employees']
+        work_days = summary_stats['work_days']
+        avg_late_rate = summary_stats['total_late'] / total_employees if total_employees else 0
+        avg_missed_rate = summary_stats['total_missed'] / total_employees if total_employees else 0
+        
+        recommendations = [
+            # 1. Отличная дисциплина
+            {
+                'condition': lambda: avg_late_rate < 0.5 and avg_missed_rate < 0.5,
+                'text': 'Продолжайте поддерживать высокий уровень дисциплины. Рекомендуется внедрить систему поощрений для мотивации сотрудников.'
+            },
+            # 2. Хорошая дисциплина с небольшими опозданиями
+            {
+                'condition': lambda: avg_late_rate < 2 and avg_missed_rate < 1,
+                'text': 'Рекомендуется настроить напоминания сотрудникам о начале смены за 15 минут для минимизации редких опозданий.'
+            },
+            # 3. Проблема с пропусками
+            {
+                'condition': lambda: avg_missed_rate >= 3,
+                'text': 'Критично высокий уровень пропусков. Необходимо провести индивидуальные беседы с сотрудниками и выяснить причины отсутствий. Рассмотрите введение системы уведомлений об обязательных отметках.'
+            },
+            # 4. Проблема с опозданиями
+            {
+                'condition': lambda: avg_late_rate >= 5,
+                'text': 'Высокий уровень опозданий. Рекомендуется проработать систему штрафов или депремирования за систематические опоздания. Проведите анализ причин опозданий.'
+            },
+            # 5. Комбинированная проблема (опоздания + пропуски)
+            {
+                'condition': lambda: avg_late_rate >= 2 and avg_missed_rate >= 2,
+                'text': 'Дисциплина требует серьезного внимания. Необходимо внедрить строгий контроль посещаемости, провести общее собрание и разъяснить важность соблюдения графика. Рассмотрите введение системы наказаний.'
+            },
+            # 6. Средние показатели с упором на опоздания
+            {
+                'condition': lambda: 2 <= avg_late_rate < 5,
+                'text': 'Рекомендуется проработать систему уведомлений при частых опозданиях, а также рассмотреть возможность гибкого графика для отдельных сотрудников.'
+            },
+            # 7. Средние показатели с упором на пропуски
+            {
+                'condition': lambda: 1 <= avg_missed_rate < 3,
+                'text': 'Необходимо усилить контроль за отметками прихода. Рекомендуется внедрить автоматические напоминания о необходимости отмечаться и проверять причины пропущенных отметок.'
+            },
+            # 8. Небольшие проблемы
+            {
+                'condition': lambda: avg_late_rate < 3 and avg_missed_rate < 2,
+                'text': 'Дисциплина на хорошем уровне. Для улучшения рекомендуется внедрить геймификацию (рейтинги пунктуальности) и систему небольших поощрений.'
+            },
+            # 9. Критическая ситуация
+            {
+                'condition': lambda: avg_late_rate >= 7 or avg_missed_rate >= 5,
+                'text': 'Критическая ситуация с дисциплиной. Требуется немедленное вмешательство руководства: проведение дисциплинарных мероприятий, пересмотр системы мотивации, возможно, кадровые изменения.'
+            },
+            # 10. Дефолтная рекомендация
+            {
+                'condition': lambda: True,
+                'text': 'Рекомендуется регулярный мониторинг дисциплины и своевременное реагирование на отклонения. Проводите еженедельный анализ показателей.'
+            }
+        ]
+        
+        # Находим первую подходящую рекомендацию
+        for rec in recommendations:
+            if rec['condition']():
+                return rec['text']
+        
+        # Возвращаем последнюю (дефолтную)
+        return recommendations[-1]['text']
+    
     def _generate_html(self, employees_stats, summary_stats, punctual, late_employees, avg_late, avg_early) -> str:
-        avg_late_rate = summary_stats['total_late'] / summary_stats['total_employees'] if summary_stats['total_employees'] else 0
-        if avg_late_rate < 1:
+        # Оценка дисциплины с учетом опозданий и пропусков
+        total_employees = summary_stats['total_employees']
+        avg_late_rate = summary_stats['total_late'] / total_employees if total_employees else 0
+        avg_missed_rate = summary_stats['total_missed'] / total_employees if total_employees else 0
+        
+        # Комбинированная оценка дисциплины
+        if avg_late_rate < 1 and avg_missed_rate < 0.5:
             discipline_level = "отличная"
-        elif avg_late_rate < 3:
+        elif avg_late_rate < 3 and avg_missed_rate < 2:
             discipline_level = "хорошая"
-        elif avg_late_rate < 5:
+        elif avg_late_rate < 5 and avg_missed_rate < 3:
             discipline_level = "удовлетворительная"
         else:
             discipline_level = "требует внимания"
+        
+        # Получаем подходящую рекомендацию
+        recommendation = self._get_recommendation(summary_stats)
         
         # Генерируем строки таблицы сотрудников
         employee_rows = ""
@@ -254,6 +288,7 @@ class DisciplineReportGenerator:
                     <td>{self._format_time(stats['avg_departure'])}</td>
                     <td>{stats['late_count']}</td>
                     <td>{stats['early_leave_count']}</td>
+                    <td>{stats['missed_days']}</td>
                     <td>{stats['photo_count']}</td>
                     <td>{stats['comment_count']}</td>
                 </tr>
@@ -380,7 +415,7 @@ class DisciplineReportGenerator:
     
     <div class="info">
         <strong>Период отчёта:</strong> {self.date_from.strftime('%d.%m.%Y')} — {self.date_to.strftime('%d.%m.%Y')}<br/>
-        <strong>Дата формирования отчёта:</strong> [текущая дата]<br/>
+        <strong>Дата формирования отчёта:</strong> {self.report_date.strftime('%d.%m.%Y')}<br/>
         🕘 <strong>Начало рабочего дня:</strong> 09:00<br/>
         🕕 <strong>Окончание рабочего дня:</strong> 18:00
     </div>
@@ -400,6 +435,7 @@ class DisciplineReportGenerator:
             <tr><td>📌 Кол-во рабочих дней в периоде</td><td>{summary_stats['work_days']}</td></tr>
             <tr><td>🛑 Кол-во опозданий (после 09:00)</td><td>{summary_stats['total_late']}</td></tr>
             <tr><td>⚠ Кол-во ранних уходов (до 18:00)</td><td>{summary_stats['total_early_leave']}</td></tr>
+            <tr><td>❌ Кол-во пропущенных дней</td><td>{summary_stats['total_missed']}</td></tr>
             <tr><td>📝 Среднее кол-во комментариев</td><td>{summary_stats['avg_comments_per_employee_per_day']} на сотрудника в день</td></tr>
             <tr><td>📷 Отметок с фото</td><td>{summary_stats['total_photos']}</td></tr>
         </tbody>
@@ -415,6 +451,7 @@ class DisciplineReportGenerator:
                 <th>🕕 Ср. время<br/>ухода</th>
                 <th>🚨 Опозданий<br/>(&gt;09:00)</th>
                 <th>🛑 Ранних уходов<br/>(&lt;18:00)</th>
+                <th>❌ Пропусков<br/>(дней)</th>
                 <th>📸 Фото</th>
                 <th>📝 Комм.</th>
             </tr>
@@ -436,8 +473,7 @@ class DisciplineReportGenerator:
     <h2>📌 Вывод</h2>
     <div class="conclusion">
         <strong>Общая дисциплина — {discipline_level}.</strong><br/><br/>
-        Рекомендуется настроить напоминания сотрудникам о начале смены за 15 минут, 
-        а также проработать систему уведомлений при частых опозданиях.
+        {recommendation}
     </div>
 </body>
 </html>
@@ -454,16 +490,6 @@ class DisciplineReportGenerator:
         
         html_content = self._generate_html(employees_stats, summary_stats, punctual, late_employees, avg_late, avg_early)
         
-        # DEBUG: Сохраняем HTML для проверки
-        if output_path:
-            html_debug_path = output_path.replace('.pdf', '_debug.html')
-            with open(html_debug_path, 'w', encoding='utf-8') as f:
-                f.write(html_content)
-            print(f"🔍 DEBUG: HTML сохранен в {html_debug_path}")
-        
-        print("ℹ️  Используем системные шрифты (Arial)")
-        
-        # Простая генерация PDF без пользовательских шрифтов
         if output_path:
             HTML(string=html_content).write_pdf(output_path)
             return BytesIO()
