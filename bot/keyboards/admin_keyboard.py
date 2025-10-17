@@ -1,5 +1,5 @@
 """Клавиатура для администраторов"""
-from telegram import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo, ReplyKeyboardMarkup, KeyboardButton
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from bot.config import MINI_APP_URL
 
 
