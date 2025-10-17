@@ -1,0 +1,67 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Документация
+*.md
+!requirements.txt
+
+# Временные файлы
+*.log
+*.tmp
+temp/
+tmp/
+
+# Локальные файлы конфигурации
+.env
+.env.local
+.env.*.local
+
+# Fonts (будут установлены в Docker образе)
+fonts/
+.fonts_installed
+
+# Test files
+*.xlsx
+*.pdf
+*.xls
+
+# Deployment
+deployment/
+scripts/
+Makefile
+

@@ -6,6 +6,7 @@ from aiohttp import web
 from bot.config import is_admin, YANDEX_MAPS_API_KEY
 from bot.services.user_service import UserService
 from bot.services.record_service import RecordService
+from bot.services.report_generator import generate_discipline_report
 from bot.models.record import Record
 from bot.models.user import User
 
@@ -552,6 +553,97 @@ async def get_employee_records(request: web.Request) -> web.Response:
     })
 
 
+async def generate_report(request: web.Request) -> web.Response:
+    """
+    Генерация PDF отчета о дисциплине сотрудников
+    
+    Args:
+        request: HTTP запрос с параметрами date_from и date_to
+        
+    Returns:
+        PDF файл с отчетом
+    """
+    # Проверяем аутентификацию
+    init_data = request.get('init_data')
+    if not init_data:
+        return web.json_response(
+            {'error': 'Неавторизованный запрос'},
+            status=401
+        )
+    
+    # Проверяем что пользователь является админом
+    user_data_str = init_data.get('user')
+    if not user_data_str:
+        return web.json_response(
+            {'error': 'Отсутствуют данные пользователя'},
+            status=401
+        )
+    
+    try:
+        user_data = json.loads(user_data_str)
+        telegram_id = user_data.get('id')
+    except json.JSONDecodeError:
+        return web.json_response(
+            {'error': 'Некорректные данные пользователя'},
+            status=401
+        )
+    
+    if not is_admin(telegram_id):
+        return web.json_response(
+            {'error': 'Доступ запрещен. Требуются права администратора.'},
+            status=403
+        )
+    
+    # Получаем параметры дат
+    date_from_str = request.query.get('date_from')
+    date_to_str = request.query.get('date_to')
+    
+    if not date_from_str or not date_to_str:
+        return web.json_response(
+            {'error': 'Необходимо указать параметры date_from и date_to в формате YYYY-MM-DD'},
+            status=400
+        )
+    
+    try:
+        date_from = datetime.strptime(date_from_str, '%Y-%m-%d').date()
+        date_to = datetime.strptime(date_to_str, '%Y-%m-%d').date()
+    except ValueError:
+        return web.json_response(
+            {'error': 'Неверный формат даты. Используйте YYYY-MM-DD'},
+            status=400
+        )
+    
+    # Проверяем что date_from не позже date_to
+    if date_from > date_to:
+        return web.json_response(
+            {'error': 'Дата начала периода не может быть позже даты окончания'},
+            status=400
+        )
+    
+    try:
+        # Генерация отчета
+        logger.info(f"Generating report for period {date_from} - {date_to} by admin {telegram_id}")
+        pdf_buffer = generate_discipline_report(date_from, date_to)
+        
+        # Формирование имени файла
+        filename = f"Отчёт_о_дисциплине_сотрудников_за_{date_from.strftime('%d.%m.%Y')}__{date_to.strftime('%d.%m.%Y')}.pdf"
+        
+        # Возвращаем PDF файл
+        return web.Response(
+            body=pdf_buffer.getvalue(),
+            content_type='application/pdf',
+            headers={
+                'Content-Disposition': f'attachment; filename="{filename}"'
+            }
+        )
+    except Exception as e:
+        logger.error(f"Error generating report: {e}", exc_info=True)
+        return web.json_response(
+            {'error': f'Ошибка при генерации отчета: {str(e)}'},
+            status=500
+        )
+
+
 def setup_routes(app: web.Application):
     """
     Настройка маршрутов API
@@ -569,4 +661,5 @@ def setup_routes(app: web.Application):
     app.router.add_get('/api/config', get_config)
     app.router.add_get('/api/current-locations', get_current_locations)
     app.router.add_get('/api/user/today-status', get_user_today_status)
+    app.router.add_get('/api/reports/discipline', generate_report)
 
