@@ -2,8 +2,11 @@
 from datetime import datetime, date, time, timedelta
 from typing import List, Dict, Any, Optional, Tuple
 from io import BytesIO
+import os
+from pathlib import Path
 
 from weasyprint import HTML, CSS
+from weasyprint.text.fonts import FontConfiguration
 
 from bot.utils.database import get_db_connection, get_db_cursor, set_search_path, qualified_table_name
 from bot.config import TELEGRAM_ADMIN_IDS
@@ -20,6 +23,57 @@ class DisciplineReportGenerator:
         self.date_from = date_from
         self.date_to = date_to
         self.report_date = datetime.now()
+        self.fonts_path = self._get_fonts_path()
+    
+    def _get_fonts_path(self) -> Optional[Path]:
+        """Получение пути к директории шрифтов"""
+        # Попробуем найти директорию fonts относительно корня проекта
+        current_file = Path(__file__)
+        project_root = current_file.parent.parent.parent  # bot/services/ -> bot/ -> root/
+        fonts_dir = project_root / 'fonts'
+        
+        if fonts_dir.exists() and (fonts_dir / 'DejaVuSans.ttf').exists():
+            return fonts_dir
+        return None
+    
+    def _get_font_face_css_object(self) -> Optional[CSS]:
+        """Создание CSS объекта с регистрацией шрифтов через @font-face"""
+        if not self.fonts_path:
+            print("⚠️  Шрифты не найдены, будет использован системный шрифт")
+            return None
+        
+        # Получаем абсолютные пути к шрифтам
+        font_regular = self.fonts_path / 'DejaVuSans.ttf'
+        font_bold = self.fonts_path / 'DejaVuSans-Bold.ttf'
+        
+        if not font_regular.exists():
+            print(f"⚠️  Основной шрифт не найден: {font_regular}")
+            return None
+        
+        print(f"✓ Используем шрифты из: {self.fonts_path}")
+        
+        # Создаем CSS с относительными путями
+        css_content = f"""
+        @font-face {{
+            font-family: 'DejaVu Sans';
+            src: url('{font_regular.name}') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }}
+        """
+        
+        if font_bold.exists():
+            css_content += f"""
+        @font-face {{
+            font-family: 'DejaVu Sans';
+            src: url('{font_bold.name}') format('truetype');
+            font-weight: bold;
+            font-style: normal;
+        }}
+        """
+        
+        # Возвращаем CSS объект с базовым URL на директорию шрифтов
+        return CSS(string=css_content, base_url=str(self.fonts_path))
         
     def _get_work_days_count(self) -> int:
         """Подсчет рабочих дней"""
@@ -228,7 +282,7 @@ class DisciplineReportGenerator:
         }}
         
         body {{
-            font-family: 'DejaVu Sans', 'Noto Color Emoji', 'Apple Color Emoji', 'Segoe UI Emoji', Arial, sans-serif;
+            font-family: Arial, 'Helvetica Neue', Helvetica, sans-serif;
             font-size: 10pt;
             line-height: 1.5;
             color: #333;
@@ -400,6 +454,16 @@ class DisciplineReportGenerator:
         
         html_content = self._generate_html(employees_stats, summary_stats, punctual, late_employees, avg_late, avg_early)
         
+        # DEBUG: Сохраняем HTML для проверки
+        if output_path:
+            html_debug_path = output_path.replace('.pdf', '_debug.html')
+            with open(html_debug_path, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+            print(f"🔍 DEBUG: HTML сохранен в {html_debug_path}")
+        
+        print("ℹ️  Используем системные шрифты (Arial)")
+        
+        # Простая генерация PDF без пользовательских шрифтов
         if output_path:
             HTML(string=html_content).write_pdf(output_path)
             return BytesIO()

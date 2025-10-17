@@ -124,30 +124,31 @@ async function generateReport() {
             throw new Error(errorData.error || 'Ошибка при генерации отчета');
         }
         
-        // Получаем PDF как blob
-        const blob = await response.blob();
+        // Получаем ответ
+        const result = await response.json();
         
-        // Формируем имя файла
-        const filename = `Отчёт_о_дисциплине_сотрудников_за_${dateFrom}_${dateTo}.pdf`;
+        // Показываем сообщение об успехе
+        statusDiv.innerHTML = `
+            <p class="status-success">✅ ${result.message}</p>
+            <p style="font-size: 14px; color: var(--text-secondary); margin-top: 8px;">
+                Откройте чат с ботом, чтобы посмотреть отчет
+            </p>
+        `;
         
-        // Скачиваем файл
-        const downloadUrl = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = downloadUrl;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(downloadUrl);
+        // Разблокируем кнопку
+        button.disabled = false;
+        button.textContent = '📄 Сгенерировать отчет';
         
-        // Показываем успех
-        statusDiv.innerHTML = '<p class="status-success">✅ Отчет успешно сгенерирован и загружен!</p>';
+        // Опционально: показываем уведомление через Telegram WebApp
+        if (window.Telegram.WebApp.showAlert) {
+            window.Telegram.WebApp.showAlert('Отчет успешно отправлен в чат с ботом!');
+        }
         
     } catch (error) {
         console.error('Ошибка генерации отчета:', error);
         statusDiv.innerHTML = `<p class="status-error">❌ Ошибка: ${error.message}</p>`;
         showError(error.message);
-    } finally {
+        
         // Разблокируем кнопку
         button.disabled = false;
         button.textContent = '📄 Сгенерировать отчет';

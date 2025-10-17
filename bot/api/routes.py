@@ -555,13 +555,13 @@ async def get_employee_records(request: web.Request) -> web.Response:
 
 async def generate_report(request: web.Request) -> web.Response:
     """
-    Генерация PDF отчета о дисциплине сотрудников
+    Генерация и отправка PDF отчета о дисциплине сотрудников в чат с ботом
     
     Args:
         request: HTTP запрос с параметрами date_from и date_to
         
     Returns:
-        PDF файл с отчетом
+        JSON ответ с информацией об отправке
     """
     # Проверяем аутентификацию
     init_data = request.get('init_data')
@@ -628,14 +628,32 @@ async def generate_report(request: web.Request) -> web.Response:
         # Формирование имени файла
         filename = f"Отчёт_о_дисциплине_сотрудников_за_{date_from.strftime('%d.%m.%Y')}__{date_to.strftime('%d.%m.%Y')}.pdf"
         
-        # Возвращаем PDF файл
-        return web.Response(
-            body=pdf_buffer.getvalue(),
-            content_type='application/pdf',
-            headers={
-                'Content-Disposition': f'attachment; filename="{filename}"'
-            }
+        # Получаем bot из app context
+        app = request.app
+        telegram_app = app.get('telegram_application')
+        if not telegram_app:
+            raise RuntimeError('Telegram application не инициализирован')
+        
+        bot = telegram_app.bot
+        
+        # Отправляем PDF в чат с пользователем
+        from telegram import InputFile
+        pdf_file = InputFile(pdf_buffer.getvalue(), filename=filename)
+        
+        await bot.send_document(
+            chat_id=telegram_id,
+            document=pdf_file,
+            caption=f"📊 Отчёт о дисциплине сотрудников\n"
+                   f"Период: {date_from.strftime('%d.%m.%Y')} - {date_to.strftime('%d.%m.%Y')}"
         )
+        
+        logger.info(f"Report sent to admin {telegram_id}")
+        
+        return web.json_response({
+            'success': True,
+            'message': 'Отчет успешно отправлен в чат с ботом'
+        })
+        
     except Exception as e:
         logger.error(f"Error generating report: {e}", exc_info=True)
         return web.json_response(
