@@ -93,14 +93,14 @@
     border-radius: var(--radius-sm);
     padding: var(--space-16);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: var(--space-8);
-    min-height: 56px;
 }
 
 .address-info-modal .address-icon {
     flex-shrink: 0;
     color: var(--text-primary);
+    margin-top: 2px;
 }
 
 .address-text-modal {
@@ -109,9 +109,8 @@
     font-weight: var(--font-weight-semibold);
     line-height: var(--line-height-body);
     color: var(--text-primary);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 /* DateTime Container */

@@ -167,3 +167,29 @@ export function isMobile() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
+/**
+ * Форматировать адрес (убирает страну, оставляет город и адрес)
+ * Убирает все до первой запятой и пробела
+ */
+export function formatAddress(address) {
+    console.log('formatAddress called with:', address);
+    
+    if (!address) {
+        console.log('formatAddress: no address, returning default');
+        return 'Адрес не определен';
+    }
+    
+    // Убираем первую часть до запятой и пробела (обычно это страна)
+    const firstCommaIndex = address.indexOf(', ');
+    console.log('firstCommaIndex:', firstCommaIndex);
+    
+    if (firstCommaIndex !== -1) {
+        const formatted = address.substring(firstCommaIndex + 2);
+        console.log('formatAddress result:', formatted);
+        return formatted;
+    }
+    
+    console.log('formatAddress: no comma found, returning original');
+    return address;
+}
+

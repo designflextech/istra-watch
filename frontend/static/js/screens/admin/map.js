@@ -4,7 +4,7 @@
  */
 
 import { API } from '../../utils/api.js';
-import { showScreen, formatTime } from '../../utils/helpers.js';
+import { showScreen, formatTime, formatAddress } from '../../utils/helpers.js';
 import { createMap, createAvatarIcon, addPlacemark, fitBounds, isYandexMapsLoaded } from '../../utils/yandex-maps.js';
 
 let fullMapInstance = null;
@@ -72,6 +72,11 @@ export async function showAdminMap() {
         
         // Добавляем метки для каждого сотрудника с аватарками
         locations.forEach(loc => {
+            console.log('MAP: Processing location for user:', loc.user.name);
+            console.log('MAP: Original address:', loc.address);
+            const formattedAddr = formatAddress(loc.address);
+            console.log('MAP: Formatted address:', formattedAddr);
+            
             const iconOptions = createAvatarIcon(loc.user.avatar_url, loc.user.name);
             
             addPlacemark(
@@ -80,7 +85,7 @@ export async function showAdminMap() {
                 {
                     balloonContent: `
                         <strong>${loc.user.name}</strong><br>
-                        ${loc.address || 'Адрес не определен'}<br>
+                        ${formattedAddr}<br>
                         <small>Отметка: ${formatTime(loc.timestamp)}</small>
                     `
                 },
