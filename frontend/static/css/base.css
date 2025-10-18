@@ -296,7 +296,20 @@ body {
 }
 
 /* ============================================
-   9. RESPONSIVE
+   9. SAFE AREA & FULLSCREEN SUPPORT
+   ============================================ */
+/* Support for Telegram fullscreen mode with safe areas */
+:root {
+    --header-padding-top: 24px; /* default value, will be overridden by JS */
+}
+
+.header {
+    /* Padding set dynamically by JavaScript based on Telegram WebApp API */
+    padding-top: var(--header-padding-top) !important;
+}
+
+/* ============================================
+   10. RESPONSIVE
    ============================================ */
 @media (max-width: 375px) {
     :root {

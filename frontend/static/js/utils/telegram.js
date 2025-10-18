@@ -67,6 +67,9 @@ export class TelegramSDK {
             
             // Применяем цветовую схему
             this.applyTheme();
+            
+            // Устанавливаем отступ для header'ов в fullscreen режиме
+            this.setupHeaderPadding();
         } else if (window.telegramApps && window.telegramApps.init) {
             // SDK v3 - используем новый API (если доступен)
             const sdk = window.telegramApps;
@@ -256,6 +259,63 @@ export class TelegramSDK {
      */
     isFullscreen() {
         return this.tg?.isFullscreen || false;
+    }
+    
+    /**
+     * Настройка отступов для header'ов в fullscreen режиме
+     */
+    setupHeaderPadding() {
+        if (!this.tg) return;
+        
+        // Функция для обновления отступа
+        const updatePadding = () => {
+            let headerPaddingTop = 24; // базовый отступ
+            
+            // Проверяем наличие contentSafeAreaInset (новый API)
+            if (this.tg.contentSafeAreaInset) {
+                const topInset = this.tg.contentSafeAreaInset.top || 0;
+                const extraPadding = 50; // дополнительный отступ для кнопок Telegram
+                headerPaddingTop = Math.max(24, topInset + extraPadding);
+            } 
+            // Проверяем старый API safeAreaInset
+            else if (this.tg.safeAreaInset) {
+                const topInset = this.tg.safeAreaInset.top || 0;
+                const extraPadding = 50; // дополнительный отступ для кнопок Telegram
+                headerPaddingTop = Math.max(24, topInset + extraPadding);
+            }
+            // В fullscreen режиме на мобильных добавляем фиксированный отступ
+            else if (this.tg.isFullscreen) {
+                const isMobile = this.tg.platform === 'android' || this.tg.platform === 'ios';
+                if (isMobile) {
+                    headerPaddingTop = 70; // достаточно для status bar + кнопки Telegram
+                }
+            }
+            
+            // Устанавливаем CSS переменную
+            document.documentElement.style.setProperty('--header-padding-top', `${headerPaddingTop}px`);
+            
+            // Применяем стиль напрямую к header'ам
+            const headers = document.querySelectorAll('.header');
+            headers.forEach((header) => {
+                header.style.paddingTop = `${headerPaddingTop}px`;
+            });
+        };
+        
+        // Обновляем сразу
+        updatePadding();
+        
+        // Также обновляем через небольшую задержку для случаев, когда DOM еще не готов
+        setTimeout(updatePadding, 500);
+        setTimeout(updatePadding, 1000);
+        
+        // Подписываемся на изменения viewport (если доступно)
+        if (this.tg.onEvent) {
+            this.tg.onEvent('viewportChanged', updatePadding);
+            this.tg.onEvent('fullscreenChanged', () => {
+                setTimeout(updatePadding, 100); // небольшая задержка для стабилизации
+            });
+            this.tg.onEvent('safeAreaChanged', updatePadding);
+        }
     }
 }
 
