@@ -36,7 +36,7 @@ async function loadEmployeeRecords(userId, date) {
     const container = document.getElementById('employee-records-container');
     const dateElement = document.getElementById('employee-records-date');
     
-    container.innerHTML = '<div class="loader"></div>';
+    container.innerHTML = '<div class="loader-container"><div class="loader"></div></div>';
     
     // Форматируем дату
     const dateObj = new Date(date);

@@ -62,7 +62,7 @@ async function loadEmployees() {
     const date = dateInput.value;
     const employeesList = document.getElementById('employees-list');
     
-    employeesList.innerHTML = '<div class="loader"></div>';
+    employeesList.innerHTML = '<div class="loader-container"><div class="loader"></div></div>';
     
     try {
         console.log('=== Loading Employees ===');

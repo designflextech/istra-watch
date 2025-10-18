@@ -16,7 +16,7 @@ export async function showRecordDetails(recordId) {
     
     // Показываем модальное окно
     modal.style.display = 'flex';
-    recordDetails.innerHTML = '<div class="loader"></div>';
+    recordDetails.innerHTML = '<div class="loader-container"><div class="loader"></div></div>';
     
     try {
         const data = await API.getRecordDetails(recordId);
