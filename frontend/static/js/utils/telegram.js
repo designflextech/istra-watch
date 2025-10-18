@@ -30,7 +30,33 @@ export class TelegramSDK {
             console.log('Version:', this.tg.version);
             
             this.tg.ready();
-            this.tg.expand();
+            
+            // Раскрываем в полный экран только на мобильных устройствах
+            const isMobile = this.tg.platform === 'android' || this.tg.platform === 'ios';
+            if (isMobile) {
+                // Используем новый API полноэкранного режима (Bot API 8.0+)
+                if (typeof this.tg.requestFullscreen === 'function') {
+                    this.tg.requestFullscreen();
+                    console.log('Requested fullscreen mode on mobile platform:', this.tg.platform);
+                    
+                    // Подписываемся на события полноэкранного режима
+                    this.tg.onEvent('fullscreenChanged', () => {
+                        console.log('Fullscreen state changed. isFullscreen:', this.tg.isFullscreen);
+                    });
+                    
+                    this.tg.onEvent('fullscreenFailed', (event) => {
+                        console.warn('Fullscreen request failed:', event.error);
+                        // Fallback на старый метод expand
+                        this.tg.expand();
+                    });
+                } else {
+                    // Fallback для старых версий Telegram
+                    this.tg.expand();
+                    console.log('Using legacy expand() on mobile platform:', this.tg.platform);
+                }
+            } else {
+                console.log('Skipped fullscreen on desktop platform:', this.tg.platform);
+            }
             
             this.initDataRaw = this.tg.initData || '';
             this.initDataParsed = this.tg.initDataUnsafe || null;
@@ -199,6 +225,37 @@ export class TelegramSDK {
         if (this.tg?.MainButton) {
             this.tg.MainButton.hideProgress();
         }
+    }
+    
+    /**
+     * Запросить полноэкранный режим (Bot API 8.0+)
+     */
+    requestFullscreen() {
+        if (this.tg?.requestFullscreen && typeof this.tg.requestFullscreen === 'function') {
+            this.tg.requestFullscreen();
+            return true;
+        }
+        console.warn('requestFullscreen() is not available');
+        return false;
+    }
+    
+    /**
+     * Выйти из полноэкранного режима (Bot API 8.0+)
+     */
+    exitFullscreen() {
+        if (this.tg?.exitFullscreen && typeof this.tg.exitFullscreen === 'function') {
+            this.tg.exitFullscreen();
+            return true;
+        }
+        console.warn('exitFullscreen() is not available');
+        return false;
+    }
+    
+    /**
+     * Проверить, находится ли приложение в полноэкранном режиме
+     */
+    isFullscreen() {
+        return this.tg?.isFullscreen || false;
     }
 }
 
