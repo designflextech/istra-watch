@@ -269,12 +269,12 @@ export class TelegramSDK {
         
         // Функция для обновления отступа
         const updatePadding = () => {
-            let headerPaddingTop = 24; // базовый отступ
+            let headerPaddingTop = 28; // базовый отступ
             
             // Проверяем наличие contentSafeAreaInset (новый API)
             if (this.tg.contentSafeAreaInset) {
                 const topInset = this.tg.contentSafeAreaInset.top || 0;
-                const extraPadding = 50; // дополнительный отступ для кнопок Telegram
+                const extraPadding = 28; // дополнительный отступ для кнопок Telegram
                 headerPaddingTop = Math.max(24, topInset + extraPadding);
             } 
             // Проверяем старый API safeAreaInset
@@ -295,7 +295,7 @@ export class TelegramSDK {
             document.documentElement.style.setProperty('--header-padding-top', `${headerPaddingTop}px`);
             
             // Применяем стиль напрямую к header'ам
-            const headers = document.querySelectorAll('.header');
+            const headers = document.querySelectorAll('.header, .profile-header, .employee-records-nav, .camera-header');
             headers.forEach((header) => {
                 header.style.paddingTop = `${headerPaddingTop}px`;
             });
