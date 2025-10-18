@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Istra Watch</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=29">
+    <link rel="stylesheet" href="/static/css/style.css">
     <!-- Telegram Web App API -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- Optional: Telegram Apps SDK v3 -->
@@ -19,120 +19,342 @@
 
     <!-- Экран для администратора: список сотрудников -->
     <div id="admin-screen" class="screen">
-        <div class="header">
-            <h1>Сотрудники</h1>
-            <div class="header-controls">
-                <button id="map-btn" class="map-btn" title="Показать на карте">🗺️</button>
-                <div class="date-picker">
-                    <input type="date" id="date-input" />
+        <div class="admin-container">
+            <div class="admin-content" style="position: relative;">
+                <div class="screen-wrapper" style="padding-bottom: 0;">
+                    <!-- Header -->
+                    <div class="header" style="padding: 24px 16px 16px; background: linear-gradient(90deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.02) 100%), #FFFFFF;">
+                        <h1 class="title-m" style="margin: 0;">Сотрудники</h1>
+                        <span id="admin-date" class="date-text"></span>
+                    </div>
+                    
+                    <!-- Hidden date input for API calls -->
+                    <input type="date" id="date-input" style="display: none;" />
+                    
+                    <!-- Employees List -->
+                    <div id="employees-list" style="display: flex; flex-direction: column; gap: 6px; padding: 16px; padding-bottom: 120px;"></div>
                 </div>
             </div>
+            
+            <!-- Bottom Navigation -->
+            <nav class="bottom-nav">
+                <div class="nav-tabbar">
+                    <a class="nav-item" data-nav="map">
+                        <svg class="nav-icon" width="32" height="32" viewBox="0 0 32 32" fill="none">
+                            <path d="M20 8L12 14V26L20 20V8ZM20 8L28 4V16L20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M4 12L12 8V20L4 24V12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="nav-label">Карта</span>
+                    </a>
+                    <button class="nav-item active" data-nav="employees">
+                        <svg class="nav-icon" width="32" height="32" viewBox="0 0 32 32" fill="none">
+                            <path d="M21 28V26C21 24.9391 20.5786 23.9217 19.8284 23.1716C19.0783 22.4214 18.0609 22 17 22H9C7.93913 22 6.92172 22.4214 6.17157 23.1716C5.42143 23.9217 5 24.9391 5 26V28" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M13 18C15.2091 18 17 16.2091 17 14C17 11.7909 15.2091 10 13 10C10.7909 10 9 11.7909 9 14C9 16.2091 10.7909 18 13 18Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M27 28V26C26.9993 25.1137 26.7044 24.2528 26.1614 23.5523C25.6184 22.8519 24.8581 22.3516 24 22.13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M20 10.13C20.8604 10.3503 21.623 10.8507 22.1676 11.5523C22.7122 12.2539 23.0078 13.1168 23.0078 14.005C23.0078 14.8932 22.7122 15.7561 22.1676 16.4577C21.623 17.1593 20.8604 17.6597 20 17.88" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="nav-label">Сотрудники</span>
+                    </button>
+                    <a class="nav-item" data-nav="reports">
+                        <svg class="nav-icon" width="32" height="32" viewBox="0 0 32 32" fill="none">
+                            <path d="M18 28H8C7.46957 28 6.96086 27.7893 6.58579 27.4142C6.21071 27.0391 6 26.5304 6 26V6C6 5.46957 6.21071 4.96086 6.58579 4.58579C6.96086 4.21071 7.46957 4 8 4H20L26 10V26C26 26.5304 25.7893 27.0391 25.4142 27.4142C25.0391 27.7893 24.5304 28 24 28H22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M20 4V10H26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="nav-label">Отчеты</span>
+                    </a>
+                </div>
+            </nav>
         </div>
-        
-        <div id="employees-list" class="employees-list"></div>
+    </div>
+
+    <!-- Экран для администратора: записи конкретного сотрудника -->
+    <div id="employee-records-screen" class="screen">
+        <div class="screen-wrapper">
+            <!-- Navigation Bar -->
+            <div class="employee-records-nav">
+                <button id="employee-records-back-btn" class="icon-btn-back">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                <span id="employee-records-date" class="date-text"></span>
+            </div>
+            
+            <!-- Profile Card -->
+            <div id="employee-records-container" class="employee-records-content"></div>
+        </div>
     </div>
 
     <!-- Экран для пользователя: главная -->
     <div id="user-screen" class="screen">
-        <div class="user-header">
-            <div class="user-info">
-                <div id="user-avatar" class="user-avatar"></div>
-                <h2 id="user-name"></h2>
+        <div class="screen-wrapper">
+            <!-- Header with Profile -->
+            <div class="profile-header">
+                <div class="profile-container">
+                    <img id="user-avatar" class="profile-avatar" alt="Avatar">
+                    <span id="user-name" class="profile-name"></span>
+                </div>
+                <div class="date-container">
+                    <span id="user-date" class="date-text"></span>
+                </div>
             </div>
-        </div>
-        
-        <!-- Яндекс карта -->
-        <div id="user-map" class="user-map">
-            <div class="map-loader">
-                <div class="loader small"></div>
-                <span>Загрузка карты...</span>
+            
+            <!-- Time and Location Container -->
+            <div id="time-location-container" class="time-location-container" style="display: none;">
+                <!-- Arrival Record -->
+                <div id="arrival-record" class="time-location-row" style="display: none;">
+                    <div class="time-location-dot"></div>
+                    <div class="time-location-details">
+                        <div class="time-location-text">
+                            <span id="arrival-time" class="time-text"></span>
+                            <span class="separator-dot"></span>
+                            <span id="arrival-location" class="location-text"></span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Divider (only shown when both records exist) -->
+                <div id="time-location-divider" class="time-location-divider" style="display: none;"></div>
+                
+                <!-- Departure Record -->
+                <div id="departure-record" class="time-location-row" style="display: none;">
+                    <div class="time-location-dot"></div>
+                    <div class="time-location-details">
+                        <div class="time-location-text">
+                            <span id="departure-time" class="time-text"></span>
+                            <span class="separator-dot"></span>
+                            <span id="departure-location" class="location-text"></span>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-        
-        <div class="actions">
-            <button id="arrival-btn" class="action-btn arrival">
-                ✅ Отметиться о приходе
-            </button>
-            <button id="departure-btn" class="action-btn departure">
-                🚪 Отметиться об уходе
-            </button>
+            
+            <!-- Яндекс карта -->
+            <div style="padding: 0 16px; margin-top: 20px;">
+                <div id="user-map" class="user-map no-records">
+                    <div class="map-loader" style="display: flex; align-items: center; justify-content: center; gap: 12px; height: 100%; color: #999;">
+                        <div class="loader small"></div>
+                        <span>Загрузка карты...</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Action Button -->
+            <div id="action-button-container" class="action-button-container no-records" style="display: flex; justify-content: center; padding: 0 16px;">
+                <button id="action-btn" class="btn btn-primary" style="display: none; width: 195px;">
+                    <!-- Текст будет установлен динамически -->
+                </button>
+            </div>
         </div>
     </div>
 
     <!-- Экран создания записи -->
     <div id="record-screen" class="screen">
-        <div class="header">
-            <button id="back-btn" class="back-btn">← Назад</button>
-            <h1 id="record-title"></h1>
-        </div>
-        
-        <form id="record-form" class="record-form">
-            <div class="form-group">
-                <label>Геолокация</label>
-                <div id="location-info" class="location-info">
-                    <div class="loader small"></div>
-                    <span>Определение местоположения...</span>
+        <div class="screen-wrapper">
+            <!-- Profile Header -->
+            <div class="profile-header">
+                <div class="profile-container">
+                    <img id="record-avatar" class="profile-avatar" alt="Avatar">
+                    <span id="record-user-name" class="profile-name"></span>
+                </div>
+                <div class="date-container">
+                    <span id="record-date" class="date-text"></span>
                 </div>
             </div>
             
-            <div class="form-group">
-                <label>Адрес</label>
-                <div id="address-info" class="address-info">
-                    Загрузка...
-                </div>
-            </div>
-            
-            <div class="form-group">
-                <label for="comment">Комментарий (необязательно)</label>
-                <textarea id="comment" rows="4" placeholder="Введите комментарий..."></textarea>
-            </div>
-            
-            <div class="form-group photo-section">
-                <label class="photo-label">
-                    <span class="photo-label-text">📷 Добавить фото (опционально)</span>
-                </label>
-                <label for="photo-input" class="photo-select-btn">
-                    📸 Сделать фото
-                </label>
-                <input type="file" id="photo-input" accept="image/*" capture style="display: none;">
-                <div id="photo-preview" class="photo-preview" style="display: none;">
-                    <div class="photo-preview-container">
-                        <img id="preview-image" alt="Предпросмотр фото" />
-                        <button type="button" id="remove-photo-btn" class="remove-photo-btn" title="Удалить фото">×</button>
+            <!-- Main Form -->
+            <form id="record-form" style="padding: 0 16px; margin-top: 32px; display: flex; flex-direction: column; gap: 32px;">
+                <!-- Address Container -->
+                <div class="input-container" style="gap: 4px;">
+                    <!-- Green Address Block -->
+                    <div class="address-info" id="address-info">
+                        <svg class="address-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2ZM12 11.5C10.62 11.5 9.5 10.38 9.5 9C9.5 7.62 10.62 6.5 12 6.5C13.38 6.5 14.5 7.62 14.5 9C14.5 10.38 13.38 11.5 12 11.5Z" fill="currentColor"/>
+                        </svg>
+                        <span class="address-text">Загрузка адреса...</span>
                     </div>
-                    <div id="photo-size-info" class="photo-size-info"></div>
+                    
+                    <!-- DateTime Block -->
+                    <div class="datetime-container">
+                        <div class="datetime-item">
+                            <span class="datetime-label">Дата</span>
+                            <span class="datetime-value" id="record-date-value">--</span>
+                        </div>
+                        <div class="datetime-divider"></div>
+                        <div class="datetime-item">
+                            <span class="datetime-label">Время</span>
+                            <span class="datetime-value" id="record-time-value">--</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Comment Section -->
+                <div class="input-container">
+                    <label class="input-label">Комментарий</label>
+                    <textarea id="comment" class="input-field" placeholder="Добавьте комментарий"></textarea>
+                </div>
+                
+                <!-- Photo Section -->
+                <div class="photo-section">
+                    <label class="input-label">
+                        Прикрепите фотографию<span style="color: #ec1919;">*</span>
+                    </label>
+                    <div class="photo-container">
+                        <div class="photo-item" id="add-photo-btn">
+                            <svg class="photo-add-icon" width="32" height="32" viewBox="0 0 32 32" fill="none">
+                                <path d="M16 8V24M8 16H24" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            </svg>
+                        </div>
+                        <div class="photo-item" id="photo-loading" style="display: none;">
+                            <div class="loader small photo-loading-icon"></div>
+                        </div>
+                        <div class="photo-item" id="photo-preview" style="display: none;">
+                            <img id="preview-image" alt="Preview" style="display: none;">
+                            <button type="button" id="remove-photo-btn" class="photo-delete-btn">
+                                <svg class="photo-delete-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <input type="file" id="photo-input" accept="image/*" style="display: none;">
+                </div>
+                
+                <!-- Buttons Container -->
+                <div style="display: flex; gap: 4px; padding-bottom: 16px;">
+                    <button type="button" id="cancel-btn" class="btn btn-secondary" style="flex: 1;">Отмена</button>
+                    <button type="submit" class="btn btn-primary submit-btn" style="width: 195px;">Сохранить</button>
+                </div>
+            </form>
+            
+            <!-- Модальное окно для камеры -->
+            <div id="camera-modal" class="camera-modal" style="display: none;">
+                <div class="camera-container">
+                    <div class="camera-header">
+                        <h3>Камера</h3>
+                        <button type="button" id="close-camera-btn" class="close-camera-btn">×</button>
+                    </div>
+                    <video id="camera-video" class="camera-video" autoplay playsinline></video>
+                    <canvas id="camera-canvas" style="display: none;"></canvas>
+                    <div class="camera-controls">
+                        <button type="button" id="switch-camera-btn" class="switch-camera-btn">🔄</button>
+                        <button type="button" id="capture-btn" class="capture-btn"></button>
+                    </div>
                 </div>
             </div>
-            
-            <button type="submit" class="submit-btn">Сохранить</button>
-        </form>
+        </div>
     </div>
 
-    <!-- Экран деталей записи -->
-    <div id="details-screen" class="screen">
-        <div class="header">
-            <button id="details-back-btn" class="back-btn">← Назад</button>
-            <h1>Детали записи</h1>
+    <!-- Модальное окно деталей записи -->
+    <div id="details-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title-container">
+                    <p id="details-type" class="modal-subtitle"></p>
+                    <h2 id="details-user-name" class="modal-title"></h2>
+                </div>
+                <button id="details-close-btn" class="modal-close-btn">
+                    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+                        <path d="M24 8L8 24M8 8L24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+            <div id="record-details" class="modal-body"></div>
         </div>
-        
-        <div id="record-details" class="record-details"></div>
     </div>
 
     <!-- Экран карты со всеми местоположениями -->
     <div id="map-screen" class="screen">
-        <div class="header">
-            <button id="map-back-btn" class="back-btn">← Назад</button>
-            <h1>Местоположения</h1>
-        </div>
-        <div id="full-map" class="full-map">
-            <div class="map-loader">
-                <div class="loader small"></div>
-                <span>Загрузка карты...</span>
+        <div class="admin-container">
+            <div class="admin-content" style="height: 100vh; overflow: hidden; position: relative;">
+                <!-- Map Container -->
+                <div id="full-map" style="width: 100%; height: 100vh; position: relative; background: #f4f4f5;">
+                    <div class="map-loader" style="display: flex; align-items: center; justify-content: center; gap: 12px; height: 100%; color: #999;">
+                        <div class="loader small"></div>
+                        <span>Загрузка карты...</span>
+                    </div>
+                </div>
             </div>
+            
+            <!-- Bottom Navigation -->
+            <nav class="bottom-nav">
+                <div class="nav-tabbar">
+                    <button class="nav-item active" data-nav="map">
+                        <svg class="nav-icon" width="32" height="32" viewBox="0 0 32 32" fill="none">
+                            <path d="M20 8L12 14V26L20 20V8ZM20 8L28 4V16L20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M4 12L12 8V20L4 24V12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="nav-label">Карта</span>
+                    </button>
+                    <a class="nav-item" data-nav="employees">
+                        <svg class="nav-icon" width="32" height="32" viewBox="0 0 32 32" fill="none">
+                            <path d="M21 28V26C21 24.9391 20.5786 23.9217 19.8284 23.1716C19.0783 22.4214 18.0609 22 17 22H9C7.93913 22 6.92172 22.4214 6.17157 23.1716C5.42143 23.9217 5 24.9391 5 26V28" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M13 18C15.2091 18 17 16.2091 17 14C17 11.7909 15.2091 10 13 10C10.7909 10 9 11.7909 9 14C9 16.2091 10.7909 18 13 18Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M27 28V26C26.9993 25.1137 26.7044 24.2528 26.1614 23.5523C25.6184 22.8519 24.8581 22.3516 24 22.13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M20 10.13C20.8604 10.3503 21.623 10.8507 22.1676 11.5523C22.7122 12.2539 23.0078 13.1168 23.0078 14.005C23.0078 14.8932 22.7122 15.7561 22.1676 16.4577C21.623 17.1593 20.8604 17.6597 20 17.88" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="nav-label">Сотрудники</span>
+                    </a>
+                    <a class="nav-item" data-nav="reports">
+                        <svg class="nav-icon" width="32" height="32" viewBox="0 0 32 32" fill="none">
+                            <path d="M18 28H8C7.46957 28 6.96086 27.7893 6.58579 27.4142C6.21071 27.0391 6 26.5304 6 26V6C6 5.46957 6.21071 4.96086 6.58579 4.58579C6.96086 4.21071 7.46957 4 8 4H20L26 10V26C26 26.5304 25.7893 27.0391 25.4142 27.4142C25.0391 27.7893 24.5304 28 24 28H22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M20 4V10H26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="nav-label">Отчеты</span>
+                    </a>
+                </div>
+            </nav>
         </div>
     </div>
 
-    <script src="/static/js/app.js?v=29"></script>
+    <!-- Экран отчетов -->
+    <div id="reports-screen" class="screen">
+        <div class="admin-container">
+            <div class="admin-content" style="position: relative;">
+                <div class="screen-wrapper" style="padding-bottom: 0;">
+                    <!-- Header -->
+                    <div class="header" style="padding: 24px 16px 16px; background: linear-gradient(90deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.02) 100%), #FFFFFF;">
+                        <h1 class="title-m" style="margin: 0;">Отчеты</h1>
+                        <span id="reports-date" class="date-text"></span>
+                    </div>
+                    
+                    <!-- Reports Container -->
+                    <div id="reports-container" class="reports-list" style="padding-bottom: 120px;"></div>
+                </div>
+            </div>
+            
+            <!-- Bottom Navigation -->
+            <nav class="bottom-nav">
+                <div class="nav-tabbar">
+                    <a class="nav-item" data-nav="map">
+                        <svg class="nav-icon" width="32" height="32" viewBox="0 0 32 32" fill="none">
+                            <path d="M20 8L12 14V26L20 20V8ZM20 8L28 4V16L20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M4 12L12 8V20L4 24V12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="nav-label">Карта</span>
+                    </a>
+                    <a class="nav-item" data-nav="employees">
+                        <svg class="nav-icon" width="32" height="32" viewBox="0 0 32 32" fill="none">
+                            <path d="M21 28V26C21 24.9391 20.5786 23.9217 19.8284 23.1716C19.0783 22.4214 18.0609 22 17 22H9C7.93913 22 6.92172 22.4214 6.17157 23.1716C5.42143 23.9217 5 24.9391 5 26V28" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M13 18C15.2091 18 17 16.2091 17 14C17 11.7909 15.2091 10 13 10C10.7909 10 9 11.7909 9 14C9 16.2091 10.7909 18 13 18Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M27 28V26C26.9993 25.1137 26.7044 24.2528 26.1614 23.5523C25.6184 22.8519 24.8581 22.3516 24 22.13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M20 10.13C20.8604 10.3503 21.623 10.8507 22.1676 11.5523C22.7122 12.2539 23.0078 13.1168 23.0078 14.005C23.0078 14.8932 22.7122 15.7561 22.1676 16.4577C21.623 17.1593 20.8604 17.6597 20 17.88" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="nav-label">Сотрудники</span>
+                    </a>
+                    <button class="nav-item active" data-nav="reports">
+                        <svg class="nav-icon" width="32" height="32" viewBox="0 0 32 32" fill="none">
+                            <path d="M18 28H8C7.46957 28 6.96086 27.7893 6.58579 27.4142C6.21071 27.0391 6 26.5304 6 26V6C6 5.46957 6.21071 4.96086 6.58579 4.58579C6.96086 4.21071 7.46957 4 8 4H20L26 10V26C26 26.5304 25.7893 27.0391 25.4142 27.4142C25.0391 27.7893 24.5304 28 24 28H22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M20 4V10H26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="nav-label">Отчеты</span>
+                    </button>
+                </div>
+            </nav>
+        </div>
+    </div>
+
+    <script type="module" src="/static/js/app.js"></script>
 </body>
 </html>
 

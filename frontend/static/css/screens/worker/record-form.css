@@ -1,0 +1,68 @@
+/* ============================================
+   ISTRA WATCH - RECORD FORM SCREEN
+   ============================================ */
+
+/* Address Section */
+.address-info {
+    background: var(--bg-success);
+    border-radius: var(--radius-sm);
+    padding: var(--space-16);
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    min-height: 56px;
+}
+
+.address-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.address-text {
+    flex: 1;
+    font-size: var(--font-size-body-l);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-body);
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* DateTime Section */
+.datetime-container {
+    background: linear-gradient(90deg, var(--bg-input) 0%, var(--bg-input) 100%), var(--bg-card);
+    border-radius: var(--radius-sm);
+    padding: var(--space-16);
+    display: flex;
+    gap: 42px;
+    min-height: 88px;
+}
+
+.datetime-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+}
+
+.datetime-label {
+    font-size: var(--font-size-body-l);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-body);
+    color: var(--text-secondary);
+}
+
+.datetime-value {
+    font-size: var(--font-size-body-l);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-body);
+    color: var(--text-primary);
+}
+
+.datetime-divider {
+    width: 1px;
+    background: var(--border-divider);
+}
+

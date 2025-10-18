@@ -6,6 +6,7 @@ from aiohttp import web
 from bot.config import is_admin, YANDEX_MAPS_API_KEY
 from bot.services.user_service import UserService
 from bot.services.record_service import RecordService
+from bot.services.report_generator import generate_discipline_report
 from bot.models.record import Record
 from bot.models.user import User
 
@@ -341,16 +342,17 @@ async def get_current_locations(request: web.Request) -> web.Response:
     
     logger.info(f"Total employees with records today: {len(employees_data)}")
     
-    # Фильтруем тех, кто отметился сегодня (и приход, и уход)
-    # Не показываем только тех, кто вообще не делал записей
+    # Формируем список местоположений
+    # Показываем последнюю запись (departure если есть, иначе arrival)
     current_locations = []
     for emp in employees_data:
-        record = emp.get('record')
         user = emp.get('user')
+        arrival_record = emp.get('arrival_record')
+        departure_record = emp.get('departure_record')
         
-        logger.info(f"User: {user.get('name') if user else 'None'}, Record type: {record.get('type') if record else 'None'}")
+        # Выбираем последнюю запись
+        record = departure_record if departure_record else arrival_record
         
-        # Проверяем что есть хоть какая-то запись (arrival или departure)
         if record and record.get('latitude') and record.get('longitude'):
             current_locations.append({
                 'user': user,
@@ -358,15 +360,306 @@ async def get_current_locations(request: web.Request) -> web.Response:
                 'longitude': record['longitude'],
                 'timestamp': record['timestamp'],
                 'address': record.get('address'),
-                'record_type': record.get('type')  # Добавляем тип записи для отображения
+                'record_type': 'departure' if departure_record else 'arrival'
             })
-            logger.info(f"Added location for user: {user.get('name')} (type: {record.get('type')})")
+            logger.info(f"Added location for user: {user.get('name')} (type: {'departure' if departure_record else 'arrival'})")
     
     logger.info(f"Total current locations: {len(current_locations)}")
     
     return web.json_response({
         'locations': current_locations
     })
+
+
+async def get_user_today_status(request: web.Request) -> web.Response:
+    """
+    Получение статуса пользователя за сегодня с деталями записей
+    
+    Returns:
+        JSON ответ с информацией о записях за сегодня:
+        {
+            "has_arrival": bool,    # есть ли отметка о приходе
+            "has_departure": bool,  # есть ли отметка об уходе  
+            "last_record_type": str | None,  # тип последней записи ('arrival' или 'departure')
+            "arrival_record": dict | None,   # детали записи о приходе
+            "departure_record": dict | None  # детали записи об уходе
+        }
+    """
+    # Init data уже валидированы в middleware
+    init_data = request.get('init_data')
+    
+    if not init_data:
+        return web.json_response(
+            {'error': 'Неверные данные аутентификации'},
+            status=401
+        )
+    
+    # Извлекаем user data
+    user_data_str = init_data.get('user')
+    if not user_data_str:
+        return web.json_response(
+            {'error': 'Отсутствуют данные пользователя'},
+            status=401
+        )
+    
+    try:
+        user_data = json.loads(user_data_str)
+        telegram_id = user_data.get('id')
+    except json.JSONDecodeError:
+        return web.json_response(
+            {'error': 'Некорректные данные пользователя'},
+            status=401
+        )
+    
+    # Получаем пользователя из БД
+    user = UserService.get_user_by_telegram_id(telegram_id)
+    
+    if not user:
+        return web.json_response(
+            {'error': 'Пользователь не найден'},
+            status=404
+        )
+    
+    # Получаем записи за сегодня с адресами
+    today = date.today()
+    records_today = Record.get_by_user_and_date_with_addresses(user.id, today)
+    
+    # Временная отладка
+    logger.info(f"User {user.id} records for {today}: {len(records_today)} records found")
+    for i, record_data in enumerate(records_today):
+        logger.info(f"Record {i}: type={record_data['record']['record_type']}, time={record_data['record']['timestamp']}, address={record_data['address']}")
+    
+    response_data = {
+        'has_arrival': False,
+        'has_departure': False,
+        'last_record_type': None,
+        'arrival_record': None,
+        'departure_record': None
+    }
+    
+    if records_today:
+        # Сортируем по времени (самая последняя первая)
+        records_today.sort(key=lambda x: x['record']['timestamp'], reverse=True)
+        
+        # Устанавливаем тип последней записи
+        response_data['last_record_type'] = records_today[0]['record']['record_type']
+        
+        # Ищем записи о приходе и уходе
+        for record_data in records_today:
+            record = record_data['record']
+            address = record_data['address']
+            
+            if record['record_type'] == Record.ARRIVAL and not response_data['has_arrival']:
+                response_data['has_arrival'] = True
+                # Извлекаем время из ISO формата (например, "2025-01-15T09:30:00" -> "09:30")
+                time_str = None
+                if record['timestamp']:
+                    try:
+                        # Если timestamp в формате ISO, извлекаем время
+                        if 'T' in record['timestamp']:
+                            time_str = record['timestamp'].split('T')[1][:5]  # HH:MM
+                        else:
+                            time_str = record['timestamp'][:5]  # Fallback
+                        logger.info(f"Extracted time for arrival: {time_str} from {record['timestamp']}")
+                    except Exception as e:
+                        logger.error(f"Error extracting time from {record['timestamp']}: {e}")
+                        time_str = None
+                
+                response_data['arrival_record'] = {
+                    'time': time_str,
+                    'address': address['formatted_address'] if address else None
+                }
+            elif record['record_type'] == Record.DEPARTURE and not response_data['has_departure']:
+                response_data['has_departure'] = True
+                # Извлекаем время из ISO формата (например, "2025-01-15T09:30:00" -> "09:30")
+                time_str = None
+                if record['timestamp']:
+                    try:
+                        # Если timestamp в формате ISO, извлекаем время
+                        if 'T' in record['timestamp']:
+                            time_str = record['timestamp'].split('T')[1][:5]  # HH:MM
+                        else:
+                            time_str = record['timestamp'][:5]  # Fallback
+                        logger.info(f"Extracted time for departure: {time_str} from {record['timestamp']}")
+                    except Exception as e:
+                        logger.error(f"Error extracting time from {record['timestamp']}: {e}")
+                        time_str = None
+                
+                response_data['departure_record'] = {
+                    'time': time_str,
+                    'address': address['formatted_address'] if address else None
+                }
+    
+    # Временная отладка
+    logger.info(f"Final response for user {user.id}: {response_data}")
+    return web.json_response(response_data)
+
+
+async def get_employee_records(request: web.Request) -> web.Response:
+    """
+    Получение записей конкретного сотрудника за определенную дату
+    
+    Args:
+        request: HTTP запрос с user_id в пути и date в query параметрах
+        
+    Returns:
+        JSON ответ со списком записей сотрудника за день
+    """
+    try:
+        user_id = int(request.match_info.get('user_id'))
+    except (ValueError, TypeError):
+        return web.json_response(
+            {'error': 'Неверный ID пользователя'},
+            status=400
+        )
+    
+    # Получаем дату из параметров запроса
+    date_str = request.query.get('date')
+    
+    if date_str:
+        try:
+            target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            return web.json_response(
+                {'error': 'Неверный формат даты. Используйте YYYY-MM-DD'},
+                status=400
+            )
+    else:
+        target_date = date.today()
+    
+    # Проверяем, что дата не старше 1 месяца
+    one_month_ago = date.today() - timedelta(days=30)
+    if target_date < one_month_ago:
+        return web.json_response(
+            {'error': 'Дата не может быть старше 1 месяца'},
+            status=400
+        )
+    
+    # Получаем пользователя
+    user = User.get_by_id(user_id)
+    if not user:
+        return web.json_response(
+            {'error': 'Пользователь не найден'},
+            status=404
+        )
+    
+    # Получаем записи за дату
+    records_data = RecordService.get_user_records_by_date(user_id, target_date)
+    
+    return web.json_response({
+        'date': target_date.isoformat(),
+        'user': user.to_dict(),
+        'records': records_data
+    })
+
+
+async def generate_report(request: web.Request) -> web.Response:
+    """
+    Генерация и отправка PDF отчета о дисциплине сотрудников в чат с ботом
+    
+    Args:
+        request: HTTP запрос с параметрами date_from и date_to
+        
+    Returns:
+        JSON ответ с информацией об отправке
+    """
+    # Проверяем аутентификацию
+    init_data = request.get('init_data')
+    if not init_data:
+        return web.json_response(
+            {'error': 'Неавторизованный запрос'},
+            status=401
+        )
+    
+    # Проверяем что пользователь является админом
+    user_data_str = init_data.get('user')
+    if not user_data_str:
+        return web.json_response(
+            {'error': 'Отсутствуют данные пользователя'},
+            status=401
+        )
+    
+    try:
+        user_data = json.loads(user_data_str)
+        telegram_id = user_data.get('id')
+    except json.JSONDecodeError:
+        return web.json_response(
+            {'error': 'Некорректные данные пользователя'},
+            status=401
+        )
+    
+    if not is_admin(telegram_id):
+        return web.json_response(
+            {'error': 'Доступ запрещен. Требуются права администратора.'},
+            status=403
+        )
+    
+    # Получаем параметры дат
+    date_from_str = request.query.get('date_from')
+    date_to_str = request.query.get('date_to')
+    
+    if not date_from_str or not date_to_str:
+        return web.json_response(
+            {'error': 'Необходимо указать параметры date_from и date_to в формате YYYY-MM-DD'},
+            status=400
+        )
+    
+    try:
+        date_from = datetime.strptime(date_from_str, '%Y-%m-%d').date()
+        date_to = datetime.strptime(date_to_str, '%Y-%m-%d').date()
+    except ValueError:
+        return web.json_response(
+            {'error': 'Неверный формат даты. Используйте YYYY-MM-DD'},
+            status=400
+        )
+    
+    # Проверяем что date_from не позже date_to
+    if date_from > date_to:
+        return web.json_response(
+            {'error': 'Дата начала периода не может быть позже даты окончания'},
+            status=400
+        )
+    
+    try:
+        # Генерация отчета
+        logger.info(f"Generating report for period {date_from} - {date_to} by admin {telegram_id}")
+        pdf_buffer = generate_discipline_report(date_from, date_to)
+        
+        # Формирование имени файла
+        filename = f"Отчёт_о_дисциплине_сотрудников_за_{date_from.strftime('%d.%m.%Y')}__{date_to.strftime('%d.%m.%Y')}.pdf"
+        
+        # Получаем bot из app context
+        app = request.app
+        telegram_app = app.get('telegram_application')
+        if not telegram_app:
+            raise RuntimeError('Telegram application не инициализирован')
+        
+        bot = telegram_app.bot
+        
+        # Отправляем PDF в чат с пользователем
+        from telegram import InputFile
+        pdf_file = InputFile(pdf_buffer.getvalue(), filename=filename)
+        
+        await bot.send_document(
+            chat_id=telegram_id,
+            document=pdf_file,
+            caption=f"📊 Отчёт о дисциплине сотрудников\n"
+                   f"Период: {date_from.strftime('%d.%m.%Y')} - {date_to.strftime('%d.%m.%Y')}"
+        )
+        
+        logger.info(f"Report sent to admin {telegram_id}")
+        
+        return web.json_response({
+            'success': True,
+            'message': 'Отчет успешно отправлен в чат с ботом'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error generating report: {e}", exc_info=True)
+        return web.json_response(
+            {'error': f'Ошибка при генерации отчета: {str(e)}'},
+            status=500
+        )
 
 
 def setup_routes(app: web.Application):
@@ -378,10 +671,13 @@ def setup_routes(app: web.Application):
     """
     app.router.add_post('/api/auth', auth_user)
     app.router.add_get('/api/employees', get_employees_status)
+    app.router.add_get('/api/employees/{user_id}/records', get_employee_records)
     app.router.add_get('/api/records/{record_id}', get_record_details)
     app.router.add_post('/api/records', create_record)
     app.router.add_post('/api/records/{record_id}/photo', upload_photo)
     app.router.add_get('/api/address', get_address)
     app.router.add_get('/api/config', get_config)
     app.router.add_get('/api/current-locations', get_current_locations)
+    app.router.add_get('/api/user/today-status', get_user_today_status)
+    app.router.add_get('/api/reports/discipline', generate_report)
 

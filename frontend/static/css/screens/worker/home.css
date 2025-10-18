@@ -1,0 +1,167 @@
+/* ============================================
+   ISTRA WATCH - WORKER HOME SCREEN
+   ============================================ */
+
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-16);
+    gap: var(--space-12);
+}
+
+.profile-header {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-20);
+    padding: 0 var(--space-16);
+    margin-top: 20px; /* Status bar + Safe Area */
+}
+
+.profile-container {
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+}
+
+.profile-avatar {
+    width: var(--avatar-md);
+    height: var(--avatar-md);
+    border-radius: var(--radius-full);
+    object-fit: cover;
+    background: var(--bg-input);
+}
+
+.profile-name {
+    font-size: var(--font-size-body-l);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-body);
+    color: var(--text-primary);
+}
+
+.date-text {
+    font-size: var(--font-size-body-m);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-title);
+    color: var(--text-tertiary);
+}
+
+.date-text .highlight {
+    color: var(--text-primary);
+}
+
+/* Time and Location Container */
+.time-location-container {
+    margin: 20px 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.time-location-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 46px;
+}
+
+.time-location-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-primary);
+    flex-shrink: 0;
+}
+
+.time-location-details {
+    flex: 1;
+    background: linear-gradient(90deg, rgba(0, 0, 0, 0.04) 0%, rgba(0, 0, 0, 0.04) 100%), 
+                linear-gradient(90deg, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 1) 100%);
+    border-radius: 16px;
+    padding: 16px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+}
+
+.time-location-text {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.time-text {
+    font-family: 'Raleway', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--text-primary);
+    flex-shrink: 0;
+}
+
+.separator-dot {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: var(--text-primary);
+    flex-shrink: 0;
+}
+
+.location-text {
+    font-family: 'Raleway', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--text-primary);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.time-location-divider {
+    width: 1px;
+    height: 2px;
+    background: var(--border-light);
+    margin-left: 3px;
+}
+
+/* Динамические высоты карты */
+.user-map {
+    width: 100%;
+    border-radius: 16px;
+    position: relative;
+    background: #f4f4f5;
+    transition: height 0.3s ease;
+}
+
+.user-map.no-records {
+    height: 499px; /* Полная высота когда нет записей */
+}
+
+.user-map.with-single-record {
+    height: 453px; /* Высота когда есть одна запись (499 - 46) */
+}
+
+.user-map.with-double-records {
+    height: 407px; /* Высота когда есть две записи (499 - 46 - 46) */
+}
+
+/* Динамическое позиционирование кнопки */
+.action-button-container {
+    transition: margin-top 0.3s ease;
+}
+
+.action-button-container.no-records {
+    margin-top: 25px; /* Стандартный отступ */
+}
+
+.action-button-container.with-single-record {
+    margin-top: 25px; /* Стандартный отступ */
+}
+
+.action-button-container.with-double-records {
+    margin-top: 25px; /* Стандартный отступ */
+}
+

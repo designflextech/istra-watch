@@ -1,0 +1,206 @@
+/* ============================================
+   ISTRA WATCH - COMPONENTS
+   ============================================ */
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+.btn {
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-family);
+    font-weight: var(--font-weight-semibold);
+    transition: transform 0.2s, opacity 0.2s;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    user-select: none;
+    -webkit-user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-8);
+}
+
+.btn:active {
+    transform: scale(0.98);
+    opacity: 0.9;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-primary {
+    background: var(--bg-button-primary);
+    color: var(--text-primary);
+    border-radius: var(--radius-full);
+    padding: var(--space-8) var(--space-36);
+    height: var(--button-height);
+    font-size: var(--font-size-title-s);
+    line-height: var(--line-height-title);
+}
+
+.btn-secondary {
+    background: linear-gradient(90deg, var(--bg-input) 0%, var(--bg-input) 100%), var(--bg-card);
+    color: var(--text-primary);
+    border-radius: var(--radius-full);
+    padding: var(--space-8) var(--space-36);
+    height: var(--button-height);
+    font-size: var(--font-size-title-s);
+    line-height: var(--line-height-title);
+}
+
+.btn-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: var(--radius-full);
+    background: var(--bg-badge);
+    padding: 0;
+}
+
+.btn-icon svg,
+.btn-icon img {
+    width: 24px;
+    height: 24px;
+}
+
+.back-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-center;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+}
+
+/* ============================================
+   CARDS
+   ============================================ */
+.card {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-card);
+    padding: var(--space-16);
+}
+
+.card-clickable {
+    cursor: pointer;
+    transition: transform 0.2s, opacity 0.2s;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+    user-select: none;
+}
+
+.card-clickable:active {
+    transform: scale(0.98);
+    opacity: 0.95;
+}
+
+/* ============================================
+   INPUTS & FORMS
+   ============================================ */
+.input-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-16);
+}
+
+.input-label {
+    font-size: var(--font-size-body-l);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-body);
+    color: var(--text-primary);
+}
+
+.input-field {
+    background: var(--bg-input);
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: var(--space-12);
+    min-height: 70px;
+    font-family: var(--font-family);
+    font-size: var(--font-size-body-l);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-body);
+    color: var(--text-primary);
+    resize: vertical;
+}
+
+.input-field::placeholder {
+    color: var(--text-quaternary);
+}
+
+.input-field:focus {
+    outline: none;
+}
+
+/* ============================================
+   PHOTO SECTION
+   ============================================ */
+.photo-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-16);
+}
+
+.photo-container {
+    display: flex;
+    gap: 11px;
+}
+
+.photo-item {
+    width: 78px;
+    height: 78px;
+    border-radius: var(--radius-sm);
+    background: var(--bg-input);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.photo-item:active {
+    opacity: 0.8;
+}
+
+.photo-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.photo-add-icon,
+.photo-loading-icon {
+    width: 32px;
+    height: 32px;
+}
+
+.photo-delete-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-xs);
+    background: var(--bg-card);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    z-index: 2;
+}
+
+.photo-delete-icon {
+    width: 24px;
+    height: 24px;
+}
+

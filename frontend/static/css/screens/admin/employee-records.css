@@ -1,0 +1,186 @@
+/* ============================================
+   ISTRA WATCH - EMPLOYEE RECORDS SCREEN
+   ============================================ */
+
+/* Navigation Bar */
+.employee-records-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 16px 20px;
+    background: linear-gradient(90deg, var(--bg-page) 0%, var(--bg-page) 100%), var(--bg-main);
+}
+
+.icon-btn-back {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
+}
+
+.icon-btn-back:active {
+    opacity: 0.6;
+}
+
+.date-text {
+    font-size: var(--font-size-body-m);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-title);
+}
+
+.date-primary {
+    color: var(--text-primary);
+}
+
+.date-secondary {
+    color: var(--text-tertiary);
+}
+
+/* Content Container */
+.employee-records-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-24);
+    padding: 0 16px 24px;
+}
+
+/* Employee Profile */
+.employee-profile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-12);
+    padding: 0 var(--space-16);
+}
+
+.employee-profile-avatar {
+    width: var(--avatar-xl);
+    height: var(--avatar-xl);
+    border-radius: var(--radius-full);
+    object-fit: cover;
+}
+
+.employee-profile-name {
+    font-size: var(--font-size-title-s);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-title);
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.employee-profile-status {
+    font-size: var(--font-size-body-s);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-title);
+    color: var(--text-primary);
+}
+
+/* Timeline */
+.timeline {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    position: relative;
+    min-width: 0;
+}
+
+.timeline-item {
+    display: flex;
+    gap: var(--space-8);
+    align-items: flex-start;
+    position: relative;
+    min-width: 0;
+}
+
+.timeline-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-primary);
+    flex-shrink: 0;
+    margin-top: 20px; /* Center with card */
+    z-index: 2;
+}
+
+.timeline-line {
+    position: absolute;
+    left: 3px;
+    top: 27px;
+    width: 1px;
+    height: 46px;
+    background: var(--text-primary);
+    z-index: 1;
+}
+
+.timeline-card {
+    flex: 1;
+    background: linear-gradient(90deg, var(--bg-input) 0%, var(--bg-input) 100%), var(--bg-card);
+    border-radius: var(--radius-sm);
+    padding: var(--space-16);
+    min-height: 46px;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-12);
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.timeline-card:active {
+    opacity: 0.8;
+}
+
+.timeline-card-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: var(--space-8);
+    min-width: 0;
+}
+
+.timeline-time {
+    font-size: var(--font-size-body-s);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-title);
+    color: var(--text-primary);
+    white-space: nowrap;
+}
+
+.timeline-time::after {
+    content: '•';
+    margin: 0 8px;
+    color: var(--text-primary);
+}
+
+.timeline-address {
+    flex: 1;
+    font-size: var(--font-size-body-s);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-title);
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+}
+
+.timeline-card svg {
+    flex-shrink: 0;
+    color: var(--text-primary);
+}
+
+/* No Records Today Message */
+.no-records-today {
+    text-align: center;
+    padding: 20px;
+    font-size: var(--font-size-body-m);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-error);
+}
+

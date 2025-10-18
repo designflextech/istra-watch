@@ -14,6 +14,9 @@ source venv/bin/activate
 
 # Установите зависимости
 make install
+
+# Установите шрифты для генерации PDF отчетов
+./scripts/install_fonts.sh
 ```
 
 ### 2. Настройка базы данных

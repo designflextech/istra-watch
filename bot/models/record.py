@@ -437,6 +437,7 @@ class Record:
                         r.longitude as record_longitude,
                         r.address_id,
                         r.created_at as record_created_at,
+                        r.photo_url,
                         a.formatted_address,
                         a.latitude as address_latitude,
                         a.longitude as address_longitude,
@@ -466,7 +467,8 @@ class Record:
                         'latitude': row['record_latitude'],
                         'longitude': row['record_longitude'],
                         'address_id': row['address_id'],
-                        'created_at': row['record_created_at'].isoformat() if row['record_created_at'] else None
+                        'created_at': row['record_created_at'].isoformat() if row['record_created_at'] else None,
+                        'has_photo': bool(row.get('photo_url'))
                     }
                     
                     address_data = None
@@ -486,6 +488,212 @@ class Record:
                     output.append({
                         'record': record_data,
                         'address': address_data
+                    })
+                
+                return output
+    
+    @staticmethod
+    def get_by_user_and_date_with_addresses(user_id: int, target_date: date) -> List[Dict[str, Any]]:
+        """
+        Получение записей пользователя за определенную дату с адресами (оптимизировано с JOIN)
+        
+        Args:
+            user_id: ID пользователя
+            target_date: Целевая дата
+            
+        Returns:
+            Список словарей с записями и адресами
+        """
+        with get_db_connection() as conn:
+            with get_db_cursor(conn) as cursor:
+                set_search_path(cursor)
+                records_table = qualified_table_name('records')
+                addresses_table = qualified_table_name('addresses')
+                
+                cursor.execute(
+                    f"""
+                    SELECT 
+                        r.id as record_id,
+                        r.user_id,
+                        r.record_type,
+                        r.timestamp,
+                        r.comment,
+                        r.latitude as record_latitude,
+                        r.longitude as record_longitude,
+                        r.address_id,
+                        r.created_at as record_created_at,
+                        r.photo_url,
+                        a.formatted_address,
+                        a.latitude as address_latitude,
+                        a.longitude as address_longitude,
+                        a.country,
+                        a.city,
+                        a.street,
+                        a.building,
+                        a.created_at as address_created_at
+                    FROM {records_table} r
+                    LEFT JOIN {addresses_table} a ON r.address_id = a.id
+                    WHERE r.user_id = %s
+                    AND DATE(r.timestamp) = %s
+                    ORDER BY r.timestamp DESC
+                    """,
+                    (user_id, target_date)
+                )
+                results = cursor.fetchall()
+                
+                output = []
+                for row in results:
+                    record_data = {
+                        'id': row['record_id'],
+                        'user_id': row['user_id'],
+                        'record_type': row['record_type'],
+                        'timestamp': row['timestamp'].isoformat() if row['timestamp'] else None,
+                        'comment': row['comment'],
+                        'latitude': row['record_latitude'],
+                        'longitude': row['record_longitude'],
+                        'address_id': row['address_id'],
+                        'created_at': row['record_created_at'].isoformat() if row['record_created_at'] else None,
+                        'has_photo': bool(row.get('photo_url'))
+                    }
+                    
+                    address_data = None
+                    if row['address_id']:
+                        address_data = {
+                            'id': row['address_id'],
+                            'formatted_address': row['formatted_address'],
+                            'latitude': row['address_latitude'],
+                            'longitude': row['address_longitude'],
+                            'country': row['country'],
+                            'city': row['city'],
+                            'street': row['street'],
+                            'building': row['building'],
+                            'created_at': row['address_created_at'].isoformat() if row['address_created_at'] else None
+                        }
+                    
+                    output.append({
+                        'record': record_data,
+                        'address': address_data
+                    })
+                
+                return output
+    
+    @staticmethod
+    def get_all_by_date_with_users_and_both_records(target_date: date) -> List[Dict[str, Any]]:
+        """
+        Получение всех пользователей с их записями arrival и departure за дату (оптимизировано с LATERAL JOIN)
+        
+        Args:
+            target_date: Целевая дата
+            
+        Returns:
+            Список словарей с пользователями, их arrival_record и departure_record
+        """
+        with get_db_connection() as conn:
+            with get_db_cursor(conn) as cursor:
+                set_search_path(cursor)
+                users_table = qualified_table_name('users')
+                records_table = qualified_table_name('records')
+                addresses_table = qualified_table_name('addresses')
+                
+                cursor.execute(
+                    f"""
+                    SELECT 
+                        u.id as user_id,
+                        u.name as user_name,
+                        u.email as user_email,
+                        u.telegram_handle as user_telegram_handle,
+                        u.telegram_id as user_telegram_id,
+                        u.phone as user_phone,
+                        u.avatar_url as user_avatar_url,
+                        u.created_at as user_created_at,
+                        u.updated_at as user_updated_at,
+                        -- Arrival record
+                        arr.id as arrival_id,
+                        arr.timestamp as arrival_timestamp,
+                        arr.comment as arrival_comment,
+                        arr.latitude as arrival_latitude,
+                        arr.longitude as arrival_longitude,
+                        arr.photo_url as arrival_photo_url,
+                        arr_addr.formatted_address as arrival_address,
+                        -- Departure record
+                        dep.id as departure_id,
+                        dep.timestamp as departure_timestamp,
+                        dep.comment as departure_comment,
+                        dep.latitude as departure_latitude,
+                        dep.longitude as departure_longitude,
+                        dep.photo_url as departure_photo_url,
+                        dep_addr.formatted_address as departure_address
+                    FROM {users_table} u
+                    LEFT JOIN LATERAL (
+                        SELECT * FROM {records_table} 
+                        WHERE user_id = u.id 
+                        AND DATE(timestamp) = %s
+                        AND record_type = 'arrival'
+                        ORDER BY timestamp DESC 
+                        LIMIT 1
+                    ) arr ON true
+                    LEFT JOIN {addresses_table} arr_addr ON arr.address_id = arr_addr.id
+                    LEFT JOIN LATERAL (
+                        SELECT * FROM {records_table} 
+                        WHERE user_id = u.id 
+                        AND DATE(timestamp) = %s
+                        AND record_type = 'departure'
+                        ORDER BY timestamp DESC 
+                        LIMIT 1
+                    ) dep ON true
+                    LEFT JOIN {addresses_table} dep_addr ON dep.address_id = dep_addr.id
+                    ORDER BY u.name
+                    """,
+                    (target_date, target_date)
+                )
+                results = cursor.fetchall()
+                
+                output = []
+                for row in results:
+                    user_data = {
+                        'id': row['user_id'],
+                        'name': row['user_name'],
+                        'email': row['user_email'],
+                        'telegram_handle': row['user_telegram_handle'],
+                        'telegram_id': row['user_telegram_id'],
+                        'phone': row['user_phone'],
+                        'avatar_url': row['user_avatar_url'],
+                        'created_at': row['user_created_at'].isoformat() if row['user_created_at'] else None,
+                        'updated_at': row['user_updated_at'].isoformat() if row['user_updated_at'] else None
+                    }
+                    
+                    arrival_record = None
+                    if row['arrival_id']:
+                        arrival_record = {
+                            'id': row['arrival_id'],
+                            'record_type': 'arrival',
+                            'timestamp': row['arrival_timestamp'].isoformat() if row['arrival_timestamp'] else None,
+                            'comment': row['arrival_comment'],
+                            'latitude': row['arrival_latitude'],
+                            'longitude': row['arrival_longitude'],
+                            'address': row['arrival_address'],
+                            'photo_url': row['arrival_photo_url'],
+                            'has_photo': bool(row['arrival_photo_url'])
+                        }
+                    
+                    departure_record = None
+                    if row['departure_id']:
+                        departure_record = {
+                            'id': row['departure_id'],
+                            'record_type': 'departure',
+                            'timestamp': row['departure_timestamp'].isoformat() if row['departure_timestamp'] else None,
+                            'comment': row['departure_comment'],
+                            'latitude': row['departure_latitude'],
+                            'longitude': row['departure_longitude'],
+                            'address': row['departure_address'],
+                            'photo_url': row['departure_photo_url'],
+                            'has_photo': bool(row['departure_photo_url'])
+                        }
+                    
+                    output.append({
+                        'user': user_data,
+                        'arrival_record': arrival_record,
+                        'departure_record': departure_record
                     })
                 
                 return output

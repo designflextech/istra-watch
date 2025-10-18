@@ -1,0 +1,306 @@
+/* ============================================
+   ISTRA WATCH - BASE STYLES
+   ============================================ */
+
+/* ============================================
+   1. RESET
+   ============================================ */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* ============================================
+   2. CSS VARIABLES
+   ============================================ */
+@import url('https://fonts.googleapis.com/css2?family=Raleway:wght@400;500;600;700&display=swap');
+
+:root {
+    /* === COLORS === */
+    /* Primary */
+    --color-black: #000000;
+    --color-white: #FFFFFF;
+    
+    /* Backgrounds */
+    --bg-main: #FFFFFF;
+    --bg-page: rgba(0, 0, 0, 0.02);
+    --bg-card: #FFFFFF;
+    --bg-input: rgba(0, 0, 0, 0.04);
+    --bg-badge: rgba(0, 0, 0, 0.06);
+    --bg-success: #e9fcf2;
+    --bg-button-primary: #FFB84D; /* Orange/Yellow button color from design */
+    
+    /* Text Colors */
+    --text-primary: #000000;
+    --text-secondary: rgba(0, 0, 0, 0.56);
+    --text-tertiary: rgba(0, 0, 0, 0.48);
+    --text-quaternary: rgba(0, 0, 0, 0.42);
+    --text-disabled: rgba(0, 0, 0, 0.36);
+    --text-error: #e62d2d;
+    --text-success: #155724;
+    
+    /* Borders */
+    --border-card: rgba(0, 0, 0, 0.05);
+    --border-divider: #d9d9d9;
+    
+    /* Shadows */
+    --shadow-card: 0px 0px 16px rgba(0, 0, 0, 0.06);
+    --shadow-nav: 0px 2px 16px rgba(0, 0, 0, 0.08);
+    
+    /* === TYPOGRAPHY === */
+    /* Font Family */
+    --font-family: 'Raleway', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    
+    /* Font Sizes */
+    --font-size-title-m: 22px;
+    --font-size-title-s: 20px;
+    --font-size-body-l: 16px;
+    --font-size-body-m: 14px;
+    --font-size-body-s: 12px;
+    --font-size-label: 10px;
+    
+    /* Line Heights */
+    --line-height-title: 1.2;
+    --line-height-body: 1.36;
+    
+    /* Font Weights */
+    --font-weight-regular: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    
+    /* === SPACING === */
+    --space-4: 4px;
+    --space-6: 6px;
+    --space-8: 8px;
+    --space-12: 12px;
+    --space-16: 16px;
+    --space-20: 20px;
+    --space-24: 24px;
+    --space-32: 32px;
+    --space-36: 36px;
+    
+    /* === BORDER RADIUS === */
+    --radius-xs: 12px;
+    --radius-sm: 16px;
+    --radius-md: 20px;
+    --radius-lg: 24px;
+    --radius-full: 100px;
+    
+    /* === SIZING === */
+    --avatar-sm: 30px;
+    --avatar-md: 42px;
+    --avatar-lg: 52px;
+    --avatar-xl: 103px;
+    --button-height: 64px;
+    --button-sm-height: 56px;
+    --nav-height: 90px;
+}
+
+/* ============================================
+   3. BASE ELEMENTS
+   ============================================ */
+html {
+    overflow: hidden;
+    height: 100%;
+    position: fixed;
+    width: 100%;
+}
+
+body {
+    font-family: var(--font-family);
+    background: var(--bg-main);
+    color: var(--text-primary);
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    height: 100%;
+    width: 100%;
+    position: fixed;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    touch-action: pan-y;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ============================================
+   4. TYPOGRAPHY CLASSES
+   ============================================ */
+.title-m {
+    font-size: var(--font-size-title-m);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-title);
+}
+
+.title-s {
+    font-size: var(--font-size-title-s);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-title);
+}
+
+.body-l {
+    font-size: var(--font-size-body-l);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-body);
+}
+
+.body-l-regular {
+    font-size: var(--font-size-body-l);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-body);
+}
+
+.body-m {
+    font-size: var(--font-size-body-m);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-title);
+}
+
+.body-s {
+    font-size: var(--font-size-body-s);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-title);
+}
+
+.label {
+    font-size: var(--font-size-label);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-title);
+}
+
+/* ============================================
+   5. LAYOUT
+   ============================================ */
+.screen {
+    display: none;
+    height: 100vh;
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    left: 0;
+}
+
+.screen.active {
+    display: block;
+}
+
+.screen-wrapper {
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    background: linear-gradient(90deg, var(--bg-page) 0%, var(--bg-page) 100%), var(--bg-main);
+}
+
+.admin-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.admin-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* ============================================
+   6. LOADING
+   ============================================ */
+#loading-screen.active {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: var(--space-16);
+}
+
+.loader {
+    border: 4px solid rgba(0, 0, 0, 0.1);
+    border-top: 4px solid var(--text-primary);
+    border-radius: var(--radius-full);
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+.loader.small {
+    width: 20px;
+    height: 20px;
+    border-width: 2px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ============================================
+   7. EMPTY STATE
+   ============================================ */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px var(--space-20);
+    text-align: center;
+}
+
+.empty-state-icon {
+    font-size: 64px;
+    margin-bottom: var(--space-16);
+    opacity: 0.5;
+}
+
+.empty-state h2 {
+    font-size: var(--font-size-title-s);
+    font-weight: var(--font-weight-semibold);
+    margin-bottom: var(--space-8);
+    color: var(--text-primary);
+}
+
+.empty-state p {
+    font-size: var(--font-size-body-m);
+    color: var(--text-tertiary);
+}
+
+/* ============================================
+   8. UTILITY CLASSES
+   ============================================ */
+.hidden {
+    display: none !important;
+}
+
+.text-error {
+    color: var(--text-error);
+}
+
+.text-success {
+    color: var(--text-success);
+}
+
+.text-secondary {
+    color: var(--text-secondary);
+}
+
+.text-tertiary {
+    color: var(--text-tertiary);
+}
+
+/* ============================================
+   9. RESPONSIVE
+   ============================================ */
+@media (max-width: 375px) {
+    :root {
+        --space-16: 12px;
+    }
+}
+

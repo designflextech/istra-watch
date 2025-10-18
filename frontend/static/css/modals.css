@@ -1,0 +1,187 @@
+/* ============================================
+   ISTRA WATCH - MODALS
+   ============================================ */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.16);
+    backdrop-filter: blur(2px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: var(--space-16);
+}
+
+.modal-content {
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    padding: var(--space-16);
+    max-width: 343px;
+    width: 100%;
+    max-height: 712px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-24);
+}
+
+.modal-header {
+    display: flex;
+    gap: var(--space-12);
+    align-items: flex-start;
+}
+
+.modal-title-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+}
+
+.modal-subtitle {
+    font-size: var(--font-size-body-s);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-title);
+    color: var(--text-secondary);
+}
+
+.modal-title {
+    font-size: var(--font-size-title-s);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-title);
+    color: var(--text-primary);
+}
+
+.modal-close-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: var(--text-primary);
+}
+
+.modal-close-btn:active {
+    opacity: 0.6;
+}
+
+.modal-body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-24);
+}
+
+/* Address Container */
+.address-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.address-info-modal {
+    background: var(--bg-success);
+    border-radius: var(--radius-sm);
+    padding: var(--space-16);
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-8);
+}
+
+.address-info-modal .address-icon {
+    flex-shrink: 0;
+    color: var(--text-primary);
+    margin-top: 2px;
+}
+
+.address-text-modal {
+    flex: 1;
+    font-size: var(--font-size-body-l);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-body);
+    color: var(--text-primary);
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* DateTime Container */
+.datetime-container-modal {
+    background: linear-gradient(90deg, var(--bg-input) 0%, var(--bg-input) 100%), var(--bg-card);
+    border-radius: var(--radius-sm);
+    padding: var(--space-16);
+    display: flex;
+    gap: 42px;
+    min-height: 88px;
+}
+
+.datetime-item-modal {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+}
+
+.datetime-label-modal {
+    font-size: var(--font-size-body-l);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-body);
+    color: var(--text-secondary);
+}
+
+.datetime-value-modal {
+    font-size: var(--font-size-body-l);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-body);
+    color: var(--text-primary);
+}
+
+.datetime-divider-modal {
+    width: 1px;
+    background: var(--border-divider);
+}
+
+/* Comment and Photo Container */
+.comment-photo-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+}
+
+.comment-container-modal {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-12);
+}
+
+.comment-label-modal {
+    font-size: var(--font-size-body-l);
+    font-weight: var(--font-weight-medium);
+    line-height: var(--line-height-body);
+    color: var(--text-secondary);
+}
+
+.comment-text-modal {
+    font-size: var(--font-size-body-l);
+    font-weight: var(--font-weight-semibold);
+    line-height: var(--line-height-body);
+    color: var(--text-primary);
+}
+
+.record-photo-full {
+    width: 100%;
+    height: 311px;
+    border-radius: var(--radius-sm);
+    display: block;
+    object-fit: cover;
+    cursor: pointer;
+}
+
