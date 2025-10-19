@@ -19,6 +19,12 @@ let userMapPlacemark = null;
 export async function showWorkerHome(user) {
     showScreen('user-screen');
     
+    // Показываем версию приложения для отладки кеша
+    console.log('🏠 Worker Home loaded - Version: 20241020-v3-records-spacing');
+    if (window.earlyDebugLog) {
+        window.earlyDebugLog('🏠 Worker Home loaded - Version: 20241020-v3-records-spacing');
+    }
+    
     // Отображаем информацию о пользователе
     renderUserInfo(user);
     
@@ -146,6 +152,7 @@ async function initUserMap(user) {
 function updateMapHeight(status) {
     const userMap = document.getElementById('user-map');
     const actionButtonContainer = document.getElementById('action-button-container');
+    const actionBtn = document.getElementById('action-btn');
     if (!userMap || !actionButtonContainer) return;
     
     // Удаляем все классы высоты
@@ -155,16 +162,35 @@ function updateMapHeight(status) {
     // Определяем количество записей
     const recordCount = (status.has_arrival ? 1 : 0) + (status.has_departure ? 1 : 0);
     
-    // Устанавливаем соответствующие классы
+    // Определяем видимость кнопки
+    const isButtonVisible = status.last_record_type !== 'departure';
+    
+    // Логируем состояние для отладки
+    console.log('🗺️ Map height update:', {
+        recordCount,
+        hasArrival: status.has_arrival,
+        hasDeparture: status.has_departure,
+        lastRecordType: status.last_record_type,
+        isButtonVisible,
+        version: '20241020-v3-records-spacing'
+    });
+    
+    // Устанавливаем соответствующие классы в зависимости от количества записей
     if (recordCount === 0) {
+        // Нет записей - кнопка видна, карта среднего размера
         userMap.classList.add('no-records');
         actionButtonContainer.classList.add('no-records');
+        console.log('📏 Map state: NO RECORDS - medium size, button visible');
     } else if (recordCount === 1) {
+        // Одна запись - кнопка видна, карта меньше
         userMap.classList.add('with-single-record');
         actionButtonContainer.classList.add('with-single-record');
+        console.log('📏 Map state: SINGLE RECORD - smaller size, button visible');
     } else if (recordCount === 2) {
+        // Две записи - кнопка НЕ видна, карта почти до низа
         userMap.classList.add('with-double-records');
         actionButtonContainer.classList.add('with-double-records');
+        console.log('📏 Map state: DOUBLE RECORDS - large size, button HIDDEN');
     }
     
     // Обновляем размер карты если она уже создана
@@ -334,7 +360,12 @@ async function updateActionButtonAndRecords(user) {
         }
         
         // Определяем, что показывать на основе статуса
-        if (status.last_record_type === 'departure') {
+        const recordCount = (status.has_arrival ? 1 : 0) + (status.has_departure ? 1 : 0);
+        
+        if (recordCount === 2) {
+            // Если есть 2 записи (приход и уход) - скрываем кнопку полностью
+            actionBtn.style.display = 'none';
+        } else if (status.last_record_type === 'departure') {
             // Если есть отметка об уходе - скрываем кнопку
             actionBtn.style.display = 'none';
         } else if (status.last_record_type === 'arrival') {
@@ -446,7 +477,12 @@ export async function refreshTimeLocationRecords(user) {
         
         // Обновляем кнопку действия
         const actionBtn = document.getElementById('action-btn');
-        if (status.last_record_type === 'departure') {
+        const recordCount = (status.has_arrival ? 1 : 0) + (status.has_departure ? 1 : 0);
+        
+        if (recordCount === 2) {
+            // Если есть 2 записи (приход и уход) - скрываем кнопку полностью
+            actionBtn.style.display = 'none';
+        } else if (status.last_record_type === 'departure') {
             // Если есть отметка об уходе - скрываем кнопку
             actionBtn.style.display = 'none';
         } else if (status.last_record_type === 'arrival') {

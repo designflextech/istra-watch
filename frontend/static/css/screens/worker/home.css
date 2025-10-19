@@ -4,10 +4,10 @@
 
 /* Переменные для высоты карты (в vh для адаптивности) */
 :root {
-    --map-height-no-records: 59vh;
-    --map-height-single-record: 53vh;
-    --map-height-double-records: 48vh;
-    --map-min-height: 48vh;
+    --map-height-no-records: 50vh; /* Средний размер когда нет записей, кнопка видна */
+    --map-height-single-record: 40vh; /* Меньше когда есть одна запись, кнопка видна */
+    --map-height-double-records: 70vh; /* Почти до низа когда есть 2 записи, кнопка НЕ видна */
+    --map-min-height: 40vh;
     --map-button-gap: var(--space-32); /* Отступ между картой и кнопкой */
 }
 
@@ -63,8 +63,9 @@
     margin: 20px 16px 0;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 8px;
     position: relative;
+    width: calc(100% - 32px);
 }
 
 .time-location-row {
@@ -73,6 +74,8 @@
     gap: 8px;
     height: 46px;
     position: relative;
+    width: 100%;
+    margin-bottom: 3px;
 }
 
 .time-location-dot {
@@ -134,9 +137,9 @@
 .time-location-divider {
     position: absolute;
     left: 3px;
-    top: 27px;
+    top: 26px;
     width: 1px;
-    height: 46px;
+    height: 48px; /* 46px + 3px margin-bottom */
     background: var(--text-primary);
     z-index: 1;
 }
@@ -166,15 +169,14 @@
 
 /* Динамическое позиционирование кнопки */
 .action-button-container {
-    transition: margin-top 0.3s ease;
+    transition: margin-top 0.3s ease, opacity 0.3s ease;
     /* Гарантируем минимальное расстояние от карты с помощью spacing переменной */
     margin-top: var(--map-button-gap) !important;
 }
 
-/* Убираем переопределение margin-top из классов состояния */
-.action-button-container.no-records,
-.action-button-container.with-single-record,
+
+/* Когда есть 2 записи - скрываем кнопку */
 .action-button-container.with-double-records {
-    /* margin-top уже установлен выше */
+    display: none !important;
 }
 

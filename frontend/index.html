@@ -8,12 +8,15 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     
     <!-- Отключаем кэш для отладки -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <meta name="cache-control" content="no-cache, no-store, must-revalidate">
+    <meta name="expires" content="0">
+    <meta name="pragma" content="no-cache">
     
     <title>Istra Watch</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=20241019-9">
+    <link rel="stylesheet" href="/static/css/style.css?v=20241020-3">
     <!-- Telegram Web App API -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- Optional: Telegram Apps SDK v3 -->
@@ -495,9 +498,18 @@
             window.earlyDebugLog('⚠️ Warning: ' + msg);
         };
         
-        const APP_VERSION = '20241019-v7-debug-hidden'; // Версия для отладки кэша
+        const APP_VERSION = '20241020-v3-records-spacing'; // Версия с отступами записей
         console.log('🔧 Early init: DOM loaded, starting debug');
         console.log('📦 App version:', APP_VERSION);
+        
+        // Принудительное обновление CSS для обхода кеша
+        const timestamp = Date.now();
+        const styleLink = document.querySelector('link[href*="style.css"]');
+        if (styleLink) {
+            const originalHref = styleLink.href.split('?')[0];
+            styleLink.href = originalHref + '?v=' + timestamp + '&force=' + Math.random();
+            console.log('🔄 CSS cache busted:', styleLink.href);
+        }
         
         // Определяем версию WebView и поддержку ES6
         const ua = navigator.userAgent;
@@ -517,7 +529,7 @@
         });
     </script>
 
-    <script type="module" src="/static/js/app.js?v=20241019-8"></script>
+    <script type="module" src="/static/js/app.js?v=20241020-1"></script>
 </body>
 </html>
 
