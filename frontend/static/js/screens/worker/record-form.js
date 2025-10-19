@@ -13,6 +13,16 @@ let currentRecordType = null;
 let selectedPhoto = null;
 
 /**
+ * Обновить состояние кнопки "Сохранить"
+ */
+function updateSubmitButtonState() {
+    const submitBtn = document.querySelector('.submit-btn');
+    if (submitBtn) {
+        submitBtn.disabled = !selectedPhoto;
+    }
+}
+
+/**
  * Показать форму создания записи
  */
 export async function showRecordForm(recordType, user) {
@@ -30,6 +40,9 @@ export async function showRecordForm(recordType, user) {
     
     // Устанавливаем обработчики
     setupFormHandlers(user);
+    
+    // Обновляем состояние кнопки (disabled по умолчанию)
+    updateSubmitButtonState();
 }
 
 /**
@@ -196,6 +209,9 @@ async function handleCapture() {
         
         console.log('Photo captured:', photo.name, photo.size, 'bytes');
         
+        // Обновляем состояние кнопки "Сохранить"
+        updateSubmitButtonState();
+        
         // Закрываем камеру
         handleCloseCamera();
     } catch (error) {
@@ -245,6 +261,9 @@ async function handlePhotoSelect(e) {
     document.getElementById('photo-preview').style.display = 'flex';
     
     console.log('Photo selected:', file.name, file.size, 'bytes');
+    
+    // Обновляем состояние кнопки "Сохранить"
+    updateSubmitButtonState();
 }
 
 /**
@@ -257,6 +276,9 @@ function resetPhotoSelection() {
     document.getElementById('add-photo-btn').style.display = 'flex';
     document.getElementById('preview-image').src = '';
     document.getElementById('preview-image').style.display = 'none';
+    
+    // Обновляем состояние кнопки "Сохранить"
+    updateSubmitButtonState();
 }
 
 /**

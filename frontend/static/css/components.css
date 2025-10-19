@@ -29,6 +29,8 @@
     opacity: 0.5;
     cursor: not-allowed;
     transform: none;
+    /* Сохраняем размер шрифта */
+    font-size: inherit;
 }
 
 .btn-primary {

@@ -22,11 +22,14 @@ export async function showWorkerHome(user) {
     // Отображаем информацию о пользователе
     renderUserInfo(user);
     
-    // Инициализируем карту
-    await initUserMap(user);
-    
-    // Обновляем кнопку действия и отображаем записи времени/местоположения
+    // Обновляем кнопку действия и отображаем записи времени/местоположения СРАЗУ
+    // Не ждем загрузки карты, т.к. геолокация все равно будет запрошена на форме записи
     await updateActionButtonAndRecords(user);
+    
+    // Инициализируем карту в фоне (не блокируем показ кнопки)
+    initUserMap(user).catch(error => {
+        console.error('Map initialization failed, but app continues:', error);
+    });
 }
 
 /**
