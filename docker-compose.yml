@@ -36,7 +36,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.istra-geo-bot.entrypoints=websecure"
-      - "traefik.http.routers.istra-geo-bot.rule=Host(`istra-geo-watch.nwsr.in`)"
+      - "traefik.http.routers.istra-geo-bot.rule=Host(`lomovoydev.nwsr.in`)"
       - "traefik.http.routers.istra-geo-bot.service=istra-geo-bot"
       - "traefik.http.routers.istra-geo-bot.tls.certresolver=le"
       - "traefik.http.services.istra-geo-bot.loadbalancer.server.port=8443"
