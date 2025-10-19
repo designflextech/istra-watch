@@ -372,7 +372,7 @@ body {
     .employee-records-nav,
     .camera-header {
         /* Для iOS используем более агрессивный подход */
-        padding-top: max(var(--header-padding-top), calc(var(--safe-area-inset-top) + 32px)) !important;
+        padding-top: max(var(--header-padding-top), calc(var(--safe-area-inset-top) + 42px)) !important;
     }
 }
 
@@ -386,7 +386,7 @@ body {
     .profile-header,
     .employee-records-nav,
     .camera-header {
-        padding-top: max(var(--header-padding-top), 60px) !important;
+        padding-top: max(var(--header-padding-top), 70px) !important;
     }
 }
 

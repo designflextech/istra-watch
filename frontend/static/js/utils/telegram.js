@@ -305,7 +305,7 @@ export class TelegramSDK {
                 if (isMobile) {
                     // Для iOS используем больший отступ
                     if (this.tg.platform === 'ios') {
-                        headerPaddingTop = 60; // для iPhone с notch/Dynamic Island
+                        headerPaddingTop = 70; // для iPhone с notch/Dynamic Island
                     } else {
                         headerPaddingTop = 50; // для Android
                     }
