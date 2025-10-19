@@ -3,8 +3,6 @@ services:
     build: .
     container_name: istra-geo-bot
     restart: unless-stopped
-    build:
-      context: .
     expose:
       - "${PORT:-3001}"
     environment:
@@ -13,7 +11,6 @@ services:
       ENVIRONMENT: ${ENVIRONMENT}
       DOMAIN: ${DOMAIN}
       STACK: ${STACK}
-      ADMINS: ${ADMINS}
       
       WEBHOOK_URL: ${WEBHOOK_URL}
       WEBHOOK_PATH: ${WEBHOOK_PATH:-/webhook}
