@@ -35,6 +35,7 @@ services:
       S3_PUBLIC_URL: ${S3_PUBLIC_URL}
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
       - "traefik.http.routers.${STACK}.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.${STACK}.entrypoints=websecure"
       - "traefik.http.routers.${STACK}.tls.certresolver=le"
