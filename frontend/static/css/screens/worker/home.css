@@ -55,6 +55,7 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    position: relative;
 }
 
 .time-location-row {
@@ -62,6 +63,7 @@
     align-items: center;
     gap: 8px;
     height: 46px;
+    position: relative;
 }
 
 .time-location-dot {
@@ -70,6 +72,7 @@
     border-radius: 50%;
     background: var(--text-primary);
     flex-shrink: 0;
+    z-index: 2;
 }
 
 .time-location-details {
@@ -120,10 +123,13 @@
 }
 
 .time-location-divider {
+    position: absolute;
+    left: 3px;
+    top: 27px;
     width: 1px;
-    height: 2px;
-    background: var(--border-light);
-    margin-left: 3px;
+    height: 46px;
+    background: var(--text-primary);
+    z-index: 1;
 }
 
 /* Динамические высоты карты */
