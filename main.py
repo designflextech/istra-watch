@@ -26,7 +26,7 @@ from bot.handlers.upload_excel_handler import (
 )
 from bot.api.routes import setup_routes
 from bot.api.middleware import setup_middlewares
-from bot.utils.database import init_connection_pool, close_connection_pool
+from bot.utils.database import init_connection_pool, close_connection_pool, auto_migrate
 
 # Настройка логирования
 logging.basicConfig(
@@ -119,6 +119,13 @@ async def on_startup(app: web.Application):
     # Инициализируем пул соединений с БД
     logger.info("Initializing database connection pool...")
     init_connection_pool(minconn=2, maxconn=20)
+    
+    # Автоматически применяем миграции при запуске
+    # Это обеспечивает автоматическую инициализацию БД:
+    # - Проверяет существование схемы и создает её при необходимости
+    # - Применяет все новые миграции автоматически
+    logger.info("Running database migrations...")
+    auto_migrate()
     
     # Создаем и настраиваем приложение бота
     application = await setup_application()
