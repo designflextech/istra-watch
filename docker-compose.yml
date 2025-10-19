@@ -35,18 +35,9 @@ services:
       S3_PUBLIC_URL: ${S3_PUBLIC_URL}
     labels:
       - "traefik.enable=true"
-      # HTTP роутер (для редиректа и ACME challenge)
-      - "traefik.http.routers.${STACK}-http.rule=Host(`${DOMAIN}`)"
-      - "traefik.http.routers.${STACK}-http.entrypoints=web"
-      - "traefik.http.routers.${STACK}-http.middlewares=${STACK}-redirect"
-      # HTTPS роутер
       - "traefik.http.routers.${STACK}.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.${STACK}.entrypoints=websecure"
       - "traefik.http.routers.${STACK}.tls.certresolver=le"
-      # Middleware для редиректа HTTP -> HTTPS
-      - "traefik.http.middlewares.${STACK}-redirect.redirectscheme.scheme=https"
-      - "traefik.http.middlewares.${STACK}-redirect.redirectscheme.permanent=true"
-      # Service
       - "traefik.http.services.${STACK}.loadbalancer.server.port=80"
     networks:
       - proxy
