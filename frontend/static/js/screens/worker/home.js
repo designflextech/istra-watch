@@ -5,7 +5,8 @@
 
 import { API } from '../../utils/api.js';
 import { telegramSDK } from '../../utils/telegram.js';
-import { showScreen } from '../../utils/helpers.js';
+import { showScreen, formatAddress } from '../../utils/helpers.js';
+import { debugLog } from '../../utils/debug.js';
 import { getLocation } from '../../utils/geolocation.js';
 import { createMap, createAvatarIcon, addPlacemark, isYandexMapsLoaded } from '../../utils/yandex-maps.js';
 
@@ -191,7 +192,27 @@ async function updateActionButtonAndRecords(user) {
     try {
         // Получаем статус пользователя за сегодня
         const status = await API.getUserTodayStatus();
-        console.log('User status response:', status);
+        
+        // Логируем только ключевые данные, чтобы не обрезалось
+        console.log('📥 Status received:', {
+            has_arrival: status.has_arrival,
+            has_departure: status.has_departure,
+            last_type: status.last_record_type,
+            arrival_time: status.arrival_record?.time,
+            arrival_addr_type: typeof status.arrival_record?.address,
+            departure_time: status.departure_record?.time,
+            departure_addr_type: typeof status.departure_record?.address
+        });
+        
+        // Проверяем что debugLog загрузился
+        if (typeof debugLog === 'function') {
+            debugLog('✅ Status OK', {
+                arrival: !!status.has_arrival,
+                departure: !!status.has_departure
+            });
+        } else {
+            console.warn('⚠️ debugLog not loaded');
+        }
         
         // Скрываем контейнер по умолчанию
         timeLocationContainer.style.display = 'none';
@@ -199,22 +220,107 @@ async function updateActionButtonAndRecords(user) {
         departureRecord.style.display = 'none';
         timeLocationDivider.style.display = 'none';
         
+        console.log('🎯 BEFORE display check:', {
+            has_arrival: status.has_arrival,
+            has_departure: status.has_departure,
+            arrival_exists: !!status.arrival_record,
+            departure_exists: !!status.departure_record
+        });
+        
         // Отображаем записи времени и местоположения
         if (status.has_arrival || status.has_departure) {
+            console.log('✅ Entering time/location display block');
             timeLocationContainer.style.display = 'block';
             
             // Отображаем запись о приходе
             if (status.has_arrival && status.arrival_record) {
-                arrivalRecord.style.display = 'flex';
-                document.getElementById('arrival-time').textContent = `Пришел: ${status.arrival_record.time}`;
-                document.getElementById('arrival-location').textContent = status.arrival_record.address || 'Адрес не указан';
+                try {
+                    console.log('🔍 ARRIVAL address:', status.arrival_record.address);
+                    console.log('🔍 formatAddress type:', typeof formatAddress);
+                    
+                    arrivalRecord.style.display = 'flex';
+                    document.getElementById('arrival-time').textContent = `Пришел: ${status.arrival_record.time}`;
+                    
+                    // Безопасный вызов formatAddress с fallback
+                    let arrivalAddress;
+                    if (typeof formatAddress === 'function') {
+                        arrivalAddress = formatAddress(status.arrival_record.address);
+                    } else {
+                        // Fallback форматирование БЕЗ зависимостей
+                        const addr = status.arrival_record.address;
+                        if (addr && typeof addr === 'object') {
+                            // Проверяем структурированные поля
+                            if (addr.city && addr.street) {
+                                arrivalAddress = [addr.city, addr.street, addr.building].filter(Boolean).join(', ');
+                            } 
+                            // Если есть formatted_address как строка
+                            else if (addr.formatted_address && typeof addr.formatted_address === 'string') {
+                                // Убираем страну (первую часть до запятой)
+                                const parts = addr.formatted_address.split(', ');
+                                arrivalAddress = parts.length > 1 ? parts.slice(1).join(', ') : addr.formatted_address;
+                            } else {
+                                arrivalAddress = 'Адрес не определен';
+                            }
+                        } else if (typeof addr === 'string') {
+                            const parts = addr.split(', ');
+                            arrivalAddress = parts.length > 1 ? parts.slice(1).join(', ') : addr;
+                        } else {
+                            arrivalAddress = 'Адрес не определен';
+                        }
+                    }
+                    
+                    const arrivalLocationEl = document.getElementById('arrival-location');
+                    arrivalLocationEl.textContent = arrivalAddress;
+                    console.log('✅ ARRIVAL set:', arrivalAddress);
+                } catch (error) {
+                    console.error('❌ ARRIVAL error:', error.message);
+                    console.error('Stack:', error.stack);
+                }
             }
             
             // Отображаем запись об уходе
             if (status.has_departure && status.departure_record) {
-                departureRecord.style.display = 'flex';
-                document.getElementById('departure-time').textContent = `Ушел: ${status.departure_record.time}`;
-                document.getElementById('departure-location').textContent = status.departure_record.address || 'Адрес не указан';
+                try {
+                    console.log('🔍 DEPARTURE address:', status.departure_record.address);
+                    
+                    departureRecord.style.display = 'flex';
+                    document.getElementById('departure-time').textContent = `Ушел: ${status.departure_record.time}`;
+                    
+                    // Безопасный вызов formatAddress с fallback
+                    let departureAddress;
+                    if (typeof formatAddress === 'function') {
+                        departureAddress = formatAddress(status.departure_record.address);
+                    } else {
+                        // Fallback форматирование БЕЗ зависимостей
+                        const addr = status.departure_record.address;
+                        if (addr && typeof addr === 'object') {
+                            // Проверяем структурированные поля
+                            if (addr.city && addr.street) {
+                                departureAddress = [addr.city, addr.street, addr.building].filter(Boolean).join(', ');
+                            } 
+                            // Если есть formatted_address как строка
+                            else if (addr.formatted_address && typeof addr.formatted_address === 'string') {
+                                // Убираем страну (первую часть до запятой)
+                                const parts = addr.formatted_address.split(', ');
+                                departureAddress = parts.length > 1 ? parts.slice(1).join(', ') : addr.formatted_address;
+                            } else {
+                                departureAddress = 'Адрес не определен';
+                            }
+                        } else if (typeof addr === 'string') {
+                            const parts = addr.split(', ');
+                            departureAddress = parts.length > 1 ? parts.slice(1).join(', ') : addr;
+                        } else {
+                            departureAddress = 'Адрес не определен';
+                        }
+                    }
+                    
+                    const departureLocationEl = document.getElementById('departure-location');
+                    departureLocationEl.textContent = departureAddress;
+                    console.log('✅ DEPARTURE set:', departureAddress);
+                } catch (error) {
+                    console.error('❌ DEPARTURE error:', error.message);
+                    console.error('Stack:', error.stack);
+                }
             }
             
             // Показываем разделитель только если есть обе записи
@@ -291,6 +397,12 @@ export async function refreshTimeLocationRecords(user) {
         // Получаем обновленный статус пользователя за сегодня
         const status = await API.getUserTodayStatus();
         console.log('Refresh - User status response:', status);
+        debugLog('Refresh - User status received', {
+            has_arrival: status.has_arrival,
+            has_departure: status.has_departure,
+            arrival_record: status.arrival_record,
+            departure_record: status.departure_record
+        });
         
         // Скрываем контейнер по умолчанию
         timeLocationContainer.style.display = 'none';
@@ -304,16 +416,22 @@ export async function refreshTimeLocationRecords(user) {
             
             // Отображаем запись о приходе
             if (status.has_arrival && status.arrival_record) {
+                debugLog('Refresh - Processing arrival record', status.arrival_record);
                 arrivalRecord.style.display = 'flex';
                 document.getElementById('arrival-time').textContent = `Пришел: ${status.arrival_record.time}`;
-                document.getElementById('arrival-location').textContent = status.arrival_record.address || 'Адрес не указан';
+                const arrivalAddress = formatAddress(status.arrival_record.address);
+                debugLog('Refresh - Arrival address formatted:', arrivalAddress);
+                document.getElementById('arrival-location').textContent = arrivalAddress;
             }
             
             // Отображаем запись об уходе
             if (status.has_departure && status.departure_record) {
+                debugLog('Refresh - Processing departure record', status.departure_record);
                 departureRecord.style.display = 'flex';
                 document.getElementById('departure-time').textContent = `Ушел: ${status.departure_record.time}`;
-                document.getElementById('departure-location').textContent = status.departure_record.address || 'Адрес не указан';
+                const departureAddress = formatAddress(status.departure_record.address);
+                debugLog('Refresh - Departure address formatted:', departureAddress);
+                document.getElementById('departure-location').textContent = departureAddress;
             }
             
             // Показываем разделитель только если есть обе записи

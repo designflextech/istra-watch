@@ -168,28 +168,90 @@ export function isMobile() {
 }
 
 /**
- * Форматировать адрес (убирает страну, оставляет город и адрес)
- * Убирает все до первой запятой и пробела
+ * Форматировать адрес в вид "Город, улица, дом"
+ * @param {Object|string} address - Объект адреса с полями city, street, building или строка
+ * @returns {string} Отформатированный адрес
  */
 export function formatAddress(address) {
-    console.log('formatAddress called with:', address);
-    
-    if (!address) {
-        console.log('formatAddress: no address, returning default');
+    try {
+        debugLog('formatAddress called', {
+            type: typeof address,
+            isNull: address === null,
+            isArray: Array.isArray(address),
+            hasCity: address?.city,
+            hasStreet: address?.street,
+            hasBuilding: address?.building,
+            hasFormattedAddress: !!address?.formatted_address,
+            formattedAddressType: typeof address?.formatted_address
+        });
+        
+        // Проверка на null, undefined, false, 0, ""
+        if (!address) {
+            debugLog('formatAddress: address is falsy');
+            return 'Адрес не определен';
+        }
+        
+        // Если пришла строка (старый формат), убираем страну
+        if (typeof address === 'string') {
+            const firstCommaIndex = address.indexOf(', ');
+            if (firstCommaIndex !== -1) {
+                const result = address.substring(firstCommaIndex + 2);
+                debugLog('formatAddress result (string):', result);
+                return result;
+            }
+            debugLog('formatAddress result (string no comma):', address);
+            return address;
+        }
+        
+        // Если пришел объект (новый формат), форматируем как "Город, улица, дом"
+        // Проверяем что это объект, не null и не массив
+        if (typeof address === 'object' && address !== null && !Array.isArray(address)) {
+            // Если адрес обернут в объект с полем formatted_address (которое само объект)
+            // Например: { formatted_address: { city: ..., street: ... } }
+            if (address.formatted_address && typeof address.formatted_address === 'object') {
+                debugLog('formatAddress: unwrapping formatted_address object');
+                return formatAddress(address.formatted_address); // Рекурсивно обрабатываем
+            }
+            
+            const parts = [];
+            
+            if (address.city) {
+                parts.push(address.city);
+            }
+            
+            if (address.street) {
+                parts.push(address.street);
+            }
+            
+            if (address.building) {
+                parts.push(address.building);
+            }
+            
+            // Если есть хотя бы одна часть, возвращаем
+            if (parts.length > 0) {
+                const result = parts.join(', ');
+                debugLog('formatAddress result (parts):', result);
+                return result;
+            }
+            
+            // Если структурированных данных нет, используем formatted_address как fallback (строка)
+            if (address.formatted_address && typeof address.formatted_address === 'string') {
+                const firstCommaIndex = address.formatted_address.indexOf(', ');
+                if (firstCommaIndex !== -1) {
+                    const result = address.formatted_address.substring(firstCommaIndex + 2);
+                    debugLog('formatAddress result (formatted_address):', result);
+                    return result;
+                }
+                debugLog('formatAddress result (formatted_address no comma):', address.formatted_address);
+                return address.formatted_address;
+            }
+        }
+        
+        debugLog('formatAddress: returning default');
         return 'Адрес не определен';
+    } catch (error) {
+        debugLog('formatAddress ERROR:', error.message);
+        return 'Ошибка форматирования адреса';
     }
-    
-    // Убираем первую часть до запятой и пробела (обычно это страна)
-    const firstCommaIndex = address.indexOf(', ');
-    console.log('firstCommaIndex:', firstCommaIndex);
-    
-    if (firstCommaIndex !== -1) {
-        const formatted = address.substring(firstCommaIndex + 2);
-        console.log('formatAddress result:', formatted);
-        return formatted;
-    }
-    
-    console.log('formatAddress: no comma found, returning original');
-    return address;
 }
 

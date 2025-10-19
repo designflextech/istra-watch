@@ -144,15 +144,9 @@ function renderEmployeeRecords(user, records, date) {
         const record = item.record;
         const address = item.address;
         
-        console.log('TIMELINE: Processing record', record.id);
-        console.log('TIMELINE: Address object:', address);
-        console.log('TIMELINE: formatted_address:', address ? address.formatted_address : 'null');
-        
         const recordType = record.record_type === 'arrival' ? 'Пришел' : 'Ушел';
         const time = formatTime(record.timestamp);
-        const addressText = address ? formatAddress(address.formatted_address) : 'Адрес не указан';
-        
-        console.log('TIMELINE: Final addressText:', addressText);
+        const addressText = address ? formatAddress(address) : 'Адрес не указан';
         
         const showLine = index < sortedRecords.length - 1;
         

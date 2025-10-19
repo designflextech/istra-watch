@@ -98,10 +98,7 @@ function renderRecordDetails(data) {
     
     // Адрес
     if (address) {
-        console.log('MODAL: Address object:', address);
-        console.log('MODAL: formatted_address:', address.formatted_address);
-        const formattedModalAddr = formatAddress(address.formatted_address);
-        console.log('MODAL: Formatted address:', formattedModalAddr);
+        const formattedModalAddr = formatAddress(address);
         
         html += `
             <div class="address-container">

@@ -3,8 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
+    <!-- Отключаем кэш для отладки -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
     <title>Istra Watch</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="/static/css/style.css?v=20241019-7">
     <!-- Telegram Web App API -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- Optional: Telegram Apps SDK v3 -->
@@ -354,7 +360,171 @@
         </div>
     </div>
 
-    <script type="module" src="/static/js/app.js"></script>
+    <!-- Кнопка для показа Debug Box (скрыта) -->
+    <button id="debug-show-btn" style="
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        background: rgba(0, 50, 0, 0.8);
+        color: #00ff00;
+        border: 2px solid #00ff00;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+        z-index: 99998;
+        cursor: pointer;
+        display: none;
+        align-items: center;
+        justify-content: center;
+    ">🐛</button>
+
+    <!-- Debug Box для отладки на мобильных устройствах (скрыт по умолчанию) -->
+    <div id="debug-box" style="
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: rgba(0, 0, 0, 0.95);
+        border-top: 2px solid #00ff00;
+        color: #00ff00;
+        font-family: monospace;
+        font-size: 11px;
+        z-index: 99999;
+        max-height: 40vh;
+        display: none;
+        flex-direction: column;
+    ">
+        <div style="
+            padding: 8px;
+            background: rgba(0, 50, 0, 0.8);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #00ff00;
+        ">
+            <strong>🐛 DEBUG LOG</strong>
+            <div>
+                <button id="debug-clear-btn" style="
+                    background: #004400;
+                    color: #00ff00;
+                    border: 1px solid #00ff00;
+                    padding: 4px 8px;
+                    margin-right: 4px;
+                    border-radius: 3px;
+                    font-size: 10px;
+                ">Очистить</button>
+                <button id="debug-toggle-btn" style="
+                    background: #004400;
+                    color: #00ff00;
+                    border: 1px solid #00ff00;
+                    padding: 4px 8px;
+                    border-radius: 3px;
+                    font-size: 10px;
+                ">Свернуть/Развернуть</button>
+            </div>
+        </div>
+        <div id="debug-content" style="
+            padding: 8px;
+            overflow-y: auto;
+            flex: 1;
+            max-height: calc(40vh - 45px);
+        ">
+            <div style="color: #ffff00; font-weight: bold;">Ожидание логов...</div>
+        </div>
+    </div>
+
+    <!-- Ранняя инициализация логирования -->
+    <script>
+        // Ранний лог для отладки на мобильных
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        const originalConsoleWarn = console.warn;
+        
+        // Создаем временную функцию для ранних логов
+        window.earlyLogs = [];
+        window.earlyDebugLog = function(msg, data) {
+            const log = {
+                timestamp: new Date().toLocaleTimeString(),
+                message: msg,
+                data: data
+            };
+            window.earlyLogs.push(log);
+            originalConsoleLog('[EARLY DEBUG]', msg, data);
+            
+            // Пробуем добавить в debug box если он уже есть
+            const debugContent = document.getElementById('debug-content');
+            if (debugContent) {
+                const dataStr = data ? '<pre style="font-size: 9px; max-height: 150px; overflow: auto; white-space: pre-wrap;">' + JSON.stringify(data, null, 2).substring(0, 800) + '</pre>' : '';
+                debugContent.innerHTML += `<div style="border-bottom: 1px solid #333; padding: 4px 0; font-size: 10px;">
+                    <strong style="color: #0f0;">[${log.timestamp}]</strong> ${msg}
+                    ${dataStr}
+                </div>`;
+                debugContent.scrollTop = debugContent.scrollHeight;
+            }
+        };
+        
+        // Перехватываем console.log для отображения в Debug Box
+        console.log = function(...args) {
+            originalConsoleLog.apply(console, args);
+            
+            // Фильтруем технические логи Telegram
+            const firstArg = String(args[0]);
+            if (firstArg.includes('[Telegram.WebView]') || 
+                firstArg.includes('viewport_changed') ||
+                firstArg.includes('safe_area_changed')) {
+                return; // Пропускаем технические логи
+            }
+            
+            const msg = args.map(arg => {
+                if (typeof arg === 'object') {
+                    try { 
+                        const str = JSON.stringify(arg, null, 2);
+                        // Обрезаем ТОЛЬКО очень большие объекты (больше 1000 символов)
+                        return str.length > 1000 ? str.substring(0, 1000) + '...[truncated]' : str;
+                    } 
+                    catch(e) { return String(arg); }
+                }
+                return String(arg);
+            }).join(' ');
+            window.earlyDebugLog('📝 ' + msg);
+        };
+        
+        console.error = function(...args) {
+            originalConsoleError.apply(console, args);
+            const msg = args.join(' ');
+            window.earlyDebugLog('❌ Error: ' + msg);
+        };
+        
+        console.warn = function(...args) {
+            originalConsoleWarn.apply(console, args);
+            const msg = args.join(' ');
+            window.earlyDebugLog('⚠️ Warning: ' + msg);
+        };
+        
+        const APP_VERSION = '20241019-v7-debug-hidden'; // Версия для отладки кэша
+        console.log('🔧 Early init: DOM loaded, starting debug');
+        console.log('📦 App version:', APP_VERSION);
+        
+        // Определяем версию WebView и поддержку ES6
+        const ua = navigator.userAgent;
+        const chromeMatch = ua.match(/Chrome\/(\d+)/);
+        const chromeVersion = chromeMatch ? parseInt(chromeMatch[1]) : null;
+        const supportsES6Modules = chromeVersion >= 61; // Chrome 61+ поддерживает ES6 модули
+        
+        window.earlyDebugLog('📱 Platform Info v' + APP_VERSION, {
+            appVersion: APP_VERSION,
+            userAgent: ua,
+            isMobile: /Mobile|Android|iPhone/i.test(ua),
+            hasTelegram: !!window.Telegram,
+            hasWebApp: !!window.Telegram?.WebApp,
+            chromeVersion: chromeVersion,
+            supportsES6Modules: supportsES6Modules,
+            telegramVersion: window.Telegram?.WebApp?.version || 'unknown'
+        });
+    </script>
+
+    <script type="module" src="/static/js/app.js?v=20241019-7"></script>
 </body>
 </html>
 

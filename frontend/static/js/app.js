@@ -6,6 +6,7 @@
 import { telegramSDK } from './utils/telegram.js';
 import { API } from './utils/api.js';
 import { showLoading, showError } from './utils/helpers.js';
+import { debugLog, initDebugBox } from './utils/debug.js';
 import { setYandexMapsApiKey, loadYandexMapsAPI } from './utils/yandex-maps.js';
 import { closeCamera } from './utils/camera.js';
 
@@ -41,10 +42,19 @@ class App {
      */
     async init() {
         try {
+            // Инициализируем debug box как можно раньше
+            initDebugBox();
+            
             console.log('=== App Initialization ===');
+            debugLog('🚀 App initialization started', {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                isTelegram: !!window.Telegram?.WebApp
+            });
             
             const telegramUser = telegramSDK.getUser();
             console.log('telegramUser:', telegramUser);
+            debugLog('Telegram user data', telegramUser);
             
             if (!telegramUser || !telegramSDK.initDataRaw) {
                 const errorDetails = [];

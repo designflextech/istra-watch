@@ -467,7 +467,7 @@ async def get_user_today_status(request: web.Request) -> web.Response:
                 
                 response_data['arrival_record'] = {
                     'time': time_str,
-                    'address': address['formatted_address'] if address else None
+                    'address': address if address else None
                 }
             elif record['record_type'] == Record.DEPARTURE and not response_data['has_departure']:
                 response_data['has_departure'] = True
@@ -487,7 +487,7 @@ async def get_user_today_status(request: web.Request) -> web.Response:
                 
                 response_data['departure_record'] = {
                     'time': time_str,
-                    'address': address['formatted_address'] if address else None
+                    'address': address if address else None
                 }
     
     # Временная отладка
