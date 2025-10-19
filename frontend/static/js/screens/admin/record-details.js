@@ -5,7 +5,7 @@
 
 import { API } from '../../utils/api.js';
 import { telegramSDK } from '../../utils/telegram.js';
-import { formatTime, formatDate, formatAddress } from '../../utils/helpers.js';
+import { formatTime, formatDate, formatAddress, showLoader } from '../../utils/helpers.js';
 
 /**
  * Показать детали записи
@@ -16,7 +16,7 @@ export async function showRecordDetails(recordId) {
     
     // Показываем модальное окно
     modal.style.display = 'flex';
-    recordDetails.innerHTML = '<div class="loader-container"><div class="loader"></div></div>';
+    showLoader(recordDetails);
     
     try {
         const data = await API.getRecordDetails(recordId);
@@ -24,6 +24,7 @@ export async function showRecordDetails(recordId) {
         renderRecordDetails(data);
         
     } catch (error) {
+        recordDetails.classList.remove('loader-active');
         recordDetails.innerHTML = `<div class="error-message">${error.message}</div>`;
     }
     
@@ -80,6 +81,9 @@ function renderRecordDetails(data) {
     const detailsType = document.getElementById('details-type');
     const detailsUserName = document.getElementById('details-user-name');
     const recordDetails = document.getElementById('record-details');
+    
+    // Убираем класс лоадера перед рендерингом
+    recordDetails.classList.remove('loader-active');
     
     // Обновляем заголовок
     detailsType.textContent = recordType;

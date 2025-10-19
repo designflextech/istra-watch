@@ -5,7 +5,7 @@
 
 import { API } from '../../utils/api.js';
 import { telegramSDK } from '../../utils/telegram.js';
-import { showScreen, formatAddress } from '../../utils/helpers.js';
+import { showScreen, formatAddress, showLoader } from '../../utils/helpers.js';
 import { debugLog } from '../../utils/debug.js';
 import { getLocation } from '../../utils/geolocation.js';
 import { createMap, createAvatarIcon, addPlacemark, isYandexMapsLoaded } from '../../utils/yandex-maps.js';
@@ -83,19 +83,20 @@ async function initUserMap(user) {
     
     // Проверяем доступность Yandex Maps API
     if (!isYandexMapsLoaded()) {
-        mapContainer.innerHTML = '<div class="map-loader"><span>Яндекс Карты недоступны</span></div>';
+        showLoader(mapContainer, 'Яндекс Карты недоступны', 'small');
         console.error('Yandex Maps API not loaded');
         return;
     }
     
     // Показываем индикатор загрузки
-    mapContainer.innerHTML = '<div class="map-loader"><div class="loader small"></div><span>Загрузка карты...</span></div>';
+    showLoader(mapContainer, 'Загрузка карты...', 'small');
     
     try {
         // Получаем геолокацию
         const location = await getLocation();
         
-        // Очищаем контейнер
+        // Очищаем контейнер и удаляем класс лоадера
+        mapContainer.classList.remove('loader-active');
         mapContainer.innerHTML = '';
         
         // Создаем карту
@@ -132,7 +133,7 @@ async function initUserMap(user) {
         
     } catch (error) {
         console.error('Error initializing map:', error);
-        mapContainer.innerHTML = '<div class="map-loader"><span>Не удалось загрузить карту</span></div>';
+        showLoader(mapContainer, 'Не удалось загрузить карту', 'small');
     }
 }
 

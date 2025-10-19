@@ -24,15 +24,54 @@ export function showScreen(screenId) {
 }
 
 /**
- * Показать индикатор загрузки
+ * Создать HTML лоадера
+ * @param {string} message - текст для отображения
+ * @param {string} size - размер лоадера ('normal' или 'small')
+ * @returns {string} HTML строка с лоадером
+ */
+export function createLoaderHTML(message = 'Загрузка...', size = 'normal') {
+    const loaderClass = size === 'small' ? 'loader small' : 'loader';
+    
+    return `
+        <div class="${loaderClass}"></div>
+        <p>${message}</p>
+    `;
+}
+
+/**
+ * Показать лоадер в контейнере
+ * @param {HTMLElement|string} container - DOM элемент или ID контейнера
+ * @param {string} message - текст для отображения
+ * @param {string} size - размер лоадера ('normal' или 'small')
+ */
+export function showLoader(container, message = 'Загрузка...', size = 'normal') {
+    const element = typeof container === 'string' ? document.getElementById(container) : container;
+    if (element) {
+        // Добавляем класс для центровки содержимого
+        element.classList.add('loader-active');
+        element.innerHTML = createLoaderHTML(message, size);
+    }
+}
+
+/**
+ * Скрыть лоадер и очистить контейнер
+ * @param {HTMLElement|string} container - DOM элемент или ID контейнера
+ */
+export function hideLoader(container) {
+    const element = typeof container === 'string' ? document.getElementById(container) : container;
+    if (element) {
+        element.classList.remove('loader-active');
+        element.innerHTML = '';
+    }
+}
+
+/**
+ * Показать полноэкранный индикатор загрузки
  */
 export function showLoading(message = 'Загрузка...') {
     const loadingScreen = document.getElementById('loading-screen');
     if (loadingScreen) {
-        loadingScreen.innerHTML = `
-            <div class="loader"></div>
-            <p>${message}</p>
-        `;
+        loadingScreen.innerHTML = createLoaderHTML(message, 'normal');
         loadingScreen.classList.add('active');
     }
 }

@@ -4,7 +4,7 @@
  */
 
 import { API } from '../../utils/api.js';
-import { showScreen, formatTime, formatAddress } from '../../utils/helpers.js';
+import { showScreen, formatTime, formatAddress, showLoader } from '../../utils/helpers.js';
 import { createMap, createAvatarIcon, addPlacemark, fitBounds, isYandexMapsLoaded } from '../../utils/yandex-maps.js';
 
 let fullMapInstance = null;
@@ -34,13 +34,13 @@ export async function showAdminMap() {
     
     // Проверяем доступность Yandex Maps API
     if (!isYandexMapsLoaded()) {
-        mapContainer.innerHTML = '<div class="map-loader"><span>Яндекс Карты недоступны</span></div>';
+        showLoader(mapContainer, 'Яндекс Карты недоступны', 'small');
         console.error('Yandex Maps API not loaded');
         return;
     }
     
     // Показываем индикатор загрузки
-    mapContainer.innerHTML = '<div class="map-loader"><div class="loader small"></div><span>Загрузка карты...</span></div>';
+    showLoader(mapContainer, 'Загрузка карты...', 'small');
     
     try {
         // Получаем текущие местоположения сотрудников (с кэшем на 30 секунд)
@@ -49,7 +49,8 @@ export async function showAdminMap() {
         
         console.log('Current locations:', locations);
         
-        // Очищаем контейнер
+        // Очищаем контейнер и удаляем класс лоадера
+        mapContainer.classList.remove('loader-active');
         mapContainer.innerHTML = '';
         
         // Определяем центр карты
@@ -100,7 +101,7 @@ export async function showAdminMap() {
         
     } catch (error) {
         console.error('Error loading locations:', error);
-        mapContainer.innerHTML = `<div class="map-loader"><span>${error.message}</span></div>`;
+        showLoader(mapContainer, error.message, 'small');
     }
 }
 

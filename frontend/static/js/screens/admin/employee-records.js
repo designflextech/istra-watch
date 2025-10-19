@@ -5,7 +5,7 @@
 
 import { API } from '../../utils/api.js';
 import { cache } from '../../utils/cache.js';
-import { showScreen, formatTime, formatDateRussian, formatAddress } from '../../utils/helpers.js';
+import { showScreen, formatTime, formatDateRussian, formatAddress, showLoader } from '../../utils/helpers.js';
 
 /**
  * Проверить, является ли дата сегодняшней
@@ -36,7 +36,7 @@ async function loadEmployeeRecords(userId, date) {
     const container = document.getElementById('employee-records-container');
     const dateElement = document.getElementById('employee-records-date');
     
-    container.innerHTML = '<div class="loader-container"><div class="loader"></div></div>';
+    showLoader(container);
     
     // Форматируем дату
     const dateObj = new Date(date);
@@ -64,6 +64,7 @@ async function loadEmployeeRecords(userId, date) {
         
     } catch (error) {
         console.error('Error loading employee records:', error);
+        container.classList.remove('loader-active');
         container.innerHTML = `<div class="error-message">${error.message}</div>`;
     }
 }
@@ -77,6 +78,9 @@ function renderEmployeeRecords(user, records, date) {
     console.log('Records:', records);
     
     const container = document.getElementById('employee-records-container');
+    
+    // Убираем класс лоадера перед рендерингом
+    container.classList.remove('loader-active');
     
     // Определяем статус
     let status = 'На месте';

@@ -5,7 +5,7 @@
 
 import { API } from '../../utils/api.js';
 import { cache } from '../../utils/cache.js';
-import { showScreen, getTodayString, formatTime } from '../../utils/helpers.js';
+import { showScreen, getTodayString, formatTime, showLoader } from '../../utils/helpers.js';
 
 // Флаг для отслеживания инициализации обработчиков
 let dateHandlerInitialized = false;
@@ -62,7 +62,7 @@ async function loadEmployees() {
     const date = dateInput.value;
     const employeesList = document.getElementById('employees-list');
     
-    employeesList.innerHTML = '<div class="loader-container"><div class="loader"></div></div>';
+    showLoader(employeesList);
     
     try {
         console.log('=== Loading Employees ===');
@@ -113,6 +113,7 @@ async function loadEmployees() {
         
     } catch (error) {
         console.error('Error loading employees:', error);
+        employeesList.classList.remove('loader-active');
         employeesList.innerHTML = `<div class="error-message">${error.message}</div>`;
     }
 }
@@ -125,6 +126,9 @@ function renderEmployees(employees, date) {
     console.log('Employees:', employees);
     
     const employeesList = document.getElementById('employees-list');
+    
+    // Убираем класс лоадера перед рендерингом
+    employeesList.classList.remove('loader-active');
     
     if (!employees || employees.length === 0) {
         console.log('No employees to display');
