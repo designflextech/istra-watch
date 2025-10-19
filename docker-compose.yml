@@ -35,12 +35,22 @@ services:
       S3_PUBLIC_URL: ${S3_PUBLIC_URL}
     labels:
       - "traefik.enable=true"
-      # HTTPS роутер
-      - "traefik.http.routers.istrageowatch.rule=Host(`istra-geo-watch.nwsr.in`)"
-      - "traefik.http.routers.istrageowatch.entrypoints=websecure"
-      - "traefik.http.routers.istrageowatch.tls=true"
-      - "traefik.http.routers.istrageowatch.tls.certresolver=le"
+      # Service definition (один на оба роутера)
       - "traefik.http.services.istrageowatch.loadbalancer.server.port=8443"
+      
+      # HTTPS роутер
+      - "traefik.http.routers.istrageowatch-secure.rule=Host(`istra-geo-watch.nwsr.in`)"
+      - "traefik.http.routers.istrageowatch-secure.entrypoints=websecure"
+      - "traefik.http.routers.istrageowatch-secure.tls=true"
+      - "traefik.http.routers.istrageowatch-secure.tls.certresolver=le"
+      - "traefik.http.routers.istrageowatch-secure.service=istrageowatch"
+      
+      # HTTP роутер (БЕЗ редиректа, с высоким приоритетом)
+      - "traefik.http.routers.istrageowatch-insecure.rule=Host(`istra-geo-watch.nwsr.in`)"
+      - "traefik.http.routers.istrageowatch-insecure.entrypoints=web"
+      - "traefik.http.routers.istrageowatch-insecure.service=istrageowatch"
+      - "traefik.http.routers.istrageowatch-insecure.priority=999"
+      
       - "traefik.docker.network=proxy"
     networks:
       - proxy
