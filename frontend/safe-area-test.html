@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    
+    <title>Safe Area Test - Istra Watch</title>
+    <link rel="stylesheet" href="/static/css/style.css?v=20241019-9">
+    
+    <style>
+        /* Дополнительные стили для тестирования */
+        .test-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, #ff0000, #00ff00, #0000ff);
+            background-size: 20px 20px;
+            z-index: -1;
+        }
+        
+        .test-info {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            z-index: 1000;
+            max-width: 300px;
+        }
+        
+        .test-controls {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            z-index: 1000;
+        }
+        
+        .test-controls button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            margin: 2px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .test-controls button:hover {
+            background: #0056b3;
+        }
+        
+        .safe-area-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border: 3px solid #ff0000;
+            pointer-events: none;
+            z-index: 999;
+            box-sizing: border-box;
+        }
+        
+        .safe-area-labels {
+            position: fixed;
+            z-index: 1001;
+            pointer-events: none;
+        }
+        
+        .safe-area-labels .label {
+            position: absolute;
+            background: rgba(255, 0, 0, 0.8);
+            color: white;
+            padding: 2px 6px;
+            font-size: 10px;
+            border-radius: 3px;
+        }
+        
+        .safe-area-labels .label-top {
+            top: 0;
+            left: 10px;
+        }
+        
+        .safe-area-labels .label-bottom {
+            bottom: 0;
+            left: 10px;
+        }
+        
+        .safe-area-labels .label-left {
+            top: 50%;
+            left: 0;
+            transform: translateY(-50%);
+        }
+        
+        .safe-area-labels .label-right {
+            top: 50%;
+            right: 0;
+            transform: translateY(-50%);
+        }
+    </style>
+</head>
+<body>
+    <!-- Тестовый контейнер с градиентом -->
+    <div class="test-container"></div>
+    
+    <!-- Информационная панель -->
+    <div class="test-info" id="test-info">
+        <div><strong>Safe Area Test</strong></div>
+        <div id="info-content">Загрузка...</div>
+    </div>
+    
+    <!-- Панель управления -->
+    <div class="test-controls">
+        <button onclick="toggleSafeAreaIndicator()">Показать Safe Area</button>
+        <button onclick="simulateIOS()">Симулировать iOS</button>
+        <button onclick="simulateAndroid()">Симулировать Android</button>
+        <button onclick="resetSimulation()">Сбросить</button>
+        <button onclick="logInfo()">Лог в консоль</button>
+    </div>
+    
+    <!-- Основной контент приложения -->
+    <div id="loading-screen" class="screen active">
+        <div class="loader"></div>
+        <p>Загрузка теста Safe Area...</p>
+    </div>
+
+    <!-- Тестовый экран с хедером -->
+    <div id="test-screen" class="screen" style="display: none;">
+        <div class="admin-container">
+            <div class="admin-content" style="position: relative;">
+                <div class="screen-wrapper" style="padding-bottom: 0;">
+                    <!-- Тестовый Header -->
+                    <div class="header" style="padding-left: 16px; padding-right: 16px; padding-bottom: 16px; background: linear-gradient(90deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.02) 100%), #FFFFFF;">
+                        <h1 class="title-m" style="margin: 0;">Тест Safe Area</h1>
+                        <span class="date-text">20 октября, понедельник</span>
+                    </div>
+                    
+                    <!-- Тестовый контент -->
+                    <div style="padding: 20px;">
+                        <h2>Информация о Safe Area:</h2>
+                        <div id="safe-area-info" style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                            <div><strong>Safe Area Insets:</strong></div>
+                            <div>Top: <span id="safe-top">-</span></div>
+                            <div>Bottom: <span id="safe-bottom">-</span></div>
+                            <div>Left: <span id="safe-left">-</span></div>
+                            <div>Right: <span id="safe-right">-</span></div>
+                        </div>
+                        
+                        <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                            <div><strong>Header Padding:</strong></div>
+                            <div>CSS Variable: <span id="header-padding-css">-</span></div>
+                            <div>Computed: <span id="header-padding-computed">-</span></div>
+                        </div>
+                        
+                        <div style="background: #fff3e0; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                            <div><strong>Viewport:</strong></div>
+                            <div>Width: <span id="viewport-width">-</span></div>
+                            <div>Height: <span id="viewport-height">-</span></div>
+                            <div>Device Pixel Ratio: <span id="device-pixel-ratio">-</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Глобальные переменные для тестирования
+        let safeAreaIndicator = null;
+        let isSimulating = false;
+        
+        // Функция обновления информации
+        function updateInfo() {
+            const computedStyle = getComputedStyle(document.documentElement);
+            const header = document.querySelector('.header');
+            const headerComputed = header ? getComputedStyle(header) : null;
+            
+            const info = {
+                safeAreaInsets: {
+                    top: computedStyle.getPropertyValue('--safe-area-inset-top') || '0px',
+                    bottom: computedStyle.getPropertyValue('--safe-area-inset-bottom') || '0px',
+                    left: computedStyle.getPropertyValue('--safe-area-inset-left') || '0px',
+                    right: computedStyle.getPropertyValue('--safe-area-inset-right') || '0px'
+                },
+                headerPadding: {
+                    css: computedStyle.getPropertyValue('--header-padding-top') || '24px',
+                    computed: headerComputed ? headerComputed.paddingTop : 'N/A'
+                },
+                viewport: {
+                    width: window.innerWidth,
+                    height: window.innerHeight,
+                    devicePixelRatio: window.devicePixelRatio
+                },
+                userAgent: navigator.userAgent,
+                platform: navigator.platform
+            };
+            
+            // Обновляем DOM
+            document.getElementById('safe-top').textContent = info.safeAreaInsets.top;
+            document.getElementById('safe-bottom').textContent = info.safeAreaInsets.bottom;
+            document.getElementById('safe-left').textContent = info.safeAreaInsets.left;
+            document.getElementById('safe-right').textContent = info.safeAreaInsets.right;
+            
+            document.getElementById('header-padding-css').textContent = info.headerPadding.css;
+            document.getElementById('header-padding-computed').textContent = info.headerPadding.computed;
+            
+            document.getElementById('viewport-width').textContent = info.viewport.width + 'px';
+            document.getElementById('viewport-height').textContent = info.viewport.height + 'px';
+            document.getElementById('device-pixel-ratio').textContent = info.viewport.devicePixelRatio;
+            
+            // Обновляем информационную панель
+            const infoContent = document.getElementById('info-content');
+            infoContent.innerHTML = `
+                <div>Platform: ${info.platform}</div>
+                <div>Safe Top: ${info.safeAreaInsets.top}</div>
+                <div>Header Padding: ${info.headerPadding.computed}</div>
+                <div>Viewport: ${info.viewport.width}x${info.viewport.height}</div>
+            `;
+            
+            return info;
+        }
+        
+        // Функция показа/скрытия индикатора safe area
+        function toggleSafeAreaIndicator() {
+            if (safeAreaIndicator) {
+                safeAreaIndicator.remove();
+                safeAreaIndicator = null;
+            } else {
+                safeAreaIndicator = document.createElement('div');
+                safeAreaIndicator.className = 'safe-area-indicator';
+                
+                const labels = document.createElement('div');
+                labels.className = 'safe-area-labels';
+                labels.innerHTML = `
+                    <div class="label label-top">Safe Area Top</div>
+                    <div class="label label-bottom">Safe Area Bottom</div>
+                    <div class="label label-left">Left</div>
+                    <div class="label label-right">Right</div>
+                `;
+                
+                safeAreaIndicator.appendChild(labels);
+                document.body.appendChild(safeAreaIndicator);
+            }
+        }
+        
+        // Симуляция iOS
+        function simulateIOS() {
+            isSimulating = true;
+            document.documentElement.style.setProperty('--safe-area-inset-top', '44px');
+            document.documentElement.style.setProperty('--safe-area-inset-bottom', '34px');
+            document.documentElement.style.setProperty('--safe-area-inset-left', '0px');
+            document.documentElement.style.setProperty('--safe-area-inset-right', '0px');
+            updateInfo();
+        }
+        
+        // Симуляция Android
+        function simulateAndroid() {
+            isSimulating = true;
+            document.documentElement.style.setProperty('--safe-area-inset-top', '24px');
+            document.documentElement.style.setProperty('--safe-area-inset-bottom', '0px');
+            document.documentElement.style.setProperty('--safe-area-inset-left', '0px');
+            document.documentElement.style.setProperty('--safe-area-inset-right', '0px');
+            updateInfo();
+        }
+        
+        // Сброс симуляции
+        function resetSimulation() {
+            isSimulating = false;
+            document.documentElement.style.removeProperty('--safe-area-inset-top');
+            document.documentElement.style.removeProperty('--safe-area-inset-bottom');
+            document.documentElement.style.removeProperty('--safe-area-inset-left');
+            document.documentElement.style.removeProperty('--safe-area-inset-right');
+            updateInfo();
+        }
+        
+        // Логирование в консоль
+        function logInfo() {
+            const info = updateInfo();
+            console.group('🔍 Safe Area Test Info');
+            console.log('Safe Area Insets:', info.safeAreaInsets);
+            console.log('Header Padding:', info.headerPadding);
+            console.log('Viewport:', info.viewport);
+            console.log('User Agent:', info.userAgent);
+            console.log('Platform:', info.platform);
+            console.groupEnd();
+        }
+        
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            // Скрываем экран загрузки и показываем тестовый экран
+            setTimeout(() => {
+                document.getElementById('loading-screen').style.display = 'none';
+                document.getElementById('test-screen').style.display = 'block';
+                
+                // Обновляем информацию
+                updateInfo();
+                
+                // Обновляем каждые 2 секунды
+                setInterval(updateInfo, 2000);
+            }, 1000);
+        });
+        
+        // Обработка изменения размера окна
+        window.addEventListener('resize', updateInfo);
+    </script>
+</body>
+</html>

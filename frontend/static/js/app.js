@@ -9,6 +9,7 @@ import { showLoading, showError } from './utils/helpers.js';
 import { debugLog, initDebugBox } from './utils/debug.js';
 import { setYandexMapsApiKey, loadYandexMapsAPI } from './utils/yandex-maps.js';
 import { closeCamera } from './utils/camera.js';
+import { safeAreaDebugger } from './utils/safe-area-debug.js';
 
 // Импорт экранов работника
 import { showWorkerHome, destroyUserMap, refreshTimeLocationRecords } from './screens/worker/home.js';
@@ -51,6 +52,12 @@ class App {
                 platform: navigator.platform,
                 isTelegram: !!window.Telegram?.WebApp
             });
+            
+            // Инициализируем отладчик safe area
+            setTimeout(() => {
+                safeAreaDebugger.logSafeAreaInfo();
+                safeAreaDebugger.validateSafeArea();
+            }, 1000);
             
             const telegramUser = telegramSDK.getUser();
             console.log('telegramUser:', telegramUser);

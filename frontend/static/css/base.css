@@ -339,14 +339,55 @@ body {
 /* Support for Telegram fullscreen mode with safe areas */
 :root {
     --header-padding-top: 24px; /* default value, will be overridden by JS */
+    --safe-area-inset-top: env(safe-area-inset-top, 0px);
+    --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
+    --safe-area-inset-left: env(safe-area-inset-left, 0px);
+    --safe-area-inset-right: env(safe-area-inset-right, 0px);
 }
 
 .header,
 .profile-header,
 .employee-records-nav,
 .camera-header {
-    /* Padding set dynamically by JavaScript based on Telegram WebApp API */
-    padding-top: var(--header-padding-top) !important;
+    /* Используем CSS env() для safe area + динамический padding от JS */
+    padding-top: max(var(--header-padding-top), calc(var(--safe-area-inset-top) + 24px)) !important;
+    padding-left: max(16px, var(--safe-area-inset-left));
+    padding-right: max(16px, var(--safe-area-inset-right));
+}
+
+/* Дополнительная защита для iOS */
+@supports (padding: max(0px)) {
+    .header,
+    .profile-header,
+    .employee-records-nav,
+    .camera-header {
+        padding-top: max(var(--header-padding-top), calc(var(--safe-area-inset-top) + 24px)) !important;
+    }
+}
+
+/* Специальные правила для iOS устройств */
+@supports (-webkit-touch-callout: none) {
+    .header,
+    .profile-header,
+    .employee-records-nav,
+    .camera-header {
+        /* Для iOS используем более агрессивный подход */
+        padding-top: max(var(--header-padding-top), calc(var(--safe-area-inset-top) + 32px)) !important;
+    }
+}
+
+/* Дополнительная защита для устройств с notch/Dynamic Island */
+@media screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3),
+       screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2),
+       screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3),
+       screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3),
+       screen and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) {
+    .header,
+    .profile-header,
+    .employee-records-nav,
+    .camera-header {
+        padding-top: max(var(--header-padding-top), 60px) !important;
+    }
 }
 
 /* ============================================
@@ -357,4 +398,5 @@ body {
         --space-16: 12px;
     }
 }
+
 

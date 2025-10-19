@@ -269,35 +269,60 @@ export class TelegramSDK {
         
         // Функция для обновления отступа
         const updatePadding = () => {
-            let headerPaddingTop = 28; // базовый отступ
+            let headerPaddingTop = 24; // базовый отступ
+            
+            // Получаем safe area insets из CSS env() переменных
+            const computedStyle = getComputedStyle(document.documentElement);
+            const safeAreaTop = parseInt(computedStyle.getPropertyValue('--safe-area-inset-top')) || 0;
+            
+            console.log('Safe area calculation:', {
+                platform: this.tg.platform,
+                isFullscreen: this.tg.isFullscreen,
+                safeAreaTop: safeAreaTop,
+                contentSafeAreaInset: this.tg.contentSafeAreaInset,
+                safeAreaInset: this.tg.safeAreaInset
+            });
             
             // Проверяем наличие contentSafeAreaInset (новый API)
             if (this.tg.contentSafeAreaInset) {
                 const topInset = this.tg.contentSafeAreaInset.top || 0;
-                const extraPadding = 28; // дополнительный отступ для кнопок Telegram
+                const extraPadding = 24; // дополнительный отступ для кнопок Telegram
                 headerPaddingTop = Math.max(24, topInset + extraPadding);
             } 
             // Проверяем старый API safeAreaInset
             else if (this.tg.safeAreaInset) {
                 const topInset = this.tg.safeAreaInset.top || 0;
-                const extraPadding = 50; // дополнительный отступ для кнопок Telegram
+                const extraPadding = 24; // дополнительный отступ для кнопок Telegram
                 headerPaddingTop = Math.max(24, topInset + extraPadding);
+            }
+            // Используем CSS env() переменные как fallback
+            else if (safeAreaTop > 0) {
+                headerPaddingTop = Math.max(24, safeAreaTop + 24);
             }
             // В fullscreen режиме на мобильных добавляем фиксированный отступ
             else if (this.tg.isFullscreen) {
                 const isMobile = this.tg.platform === 'android' || this.tg.platform === 'ios';
                 if (isMobile) {
-                    headerPaddingTop = 70; // достаточно для status bar + кнопки Telegram
+                    // Для iOS используем больший отступ
+                    if (this.tg.platform === 'ios') {
+                        headerPaddingTop = 60; // для iPhone с notch/Dynamic Island
+                    } else {
+                        headerPaddingTop = 50; // для Android
+                    }
                 }
             }
+            
+            console.log('Final header padding top:', headerPaddingTop);
             
             // Устанавливаем CSS переменную
             document.documentElement.style.setProperty('--header-padding-top', `${headerPaddingTop}px`);
             
-            // Применяем стиль напрямую к header'ам
+            // Применяем стиль напрямую к header'ам (как fallback)
             const headers = document.querySelectorAll('.header, .profile-header, .employee-records-nav, .camera-header');
             headers.forEach((header) => {
-                header.style.paddingTop = `${headerPaddingTop}px`;
+                // Используем max() для гарантии минимального отступа
+                const finalPadding = Math.max(headerPaddingTop, safeAreaTop + 24);
+                header.style.paddingTop = `${finalPadding}px`;
             });
         };
         
@@ -307,6 +332,7 @@ export class TelegramSDK {
         // Также обновляем через небольшую задержку для случаев, когда DOM еще не готов
         setTimeout(updatePadding, 500);
         setTimeout(updatePadding, 1000);
+        setTimeout(updatePadding, 2000); // дополнительная задержка для iOS
         
         // Подписываемся на изменения viewport (если доступно)
         if (this.tg.onEvent) {
@@ -315,6 +341,14 @@ export class TelegramSDK {
                 setTimeout(updatePadding, 100); // небольшая задержка для стабилизации
             });
             this.tg.onEvent('safeAreaChanged', updatePadding);
+        }
+        
+        // Дополнительная проверка для iOS через ResizeObserver
+        if (window.ResizeObserver) {
+            const resizeObserver = new ResizeObserver(() => {
+                setTimeout(updatePadding, 50);
+            });
+            resizeObserver.observe(document.documentElement);
         }
     }
 }

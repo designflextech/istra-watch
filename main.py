@@ -109,6 +109,21 @@ async def serve_frontend(request: web.Request) -> web.Response:
     return web.Response(text=content, content_type='text/html')
 
 
+async def serve_safe_area_test(request: web.Request) -> web.Response:
+    """
+    Обслуживание тестовой страницы Safe Area
+    
+    Args:
+        request: HTTP запрос
+        
+    Returns:
+        HTML страница для тестирования Safe Area
+    """
+    with open('frontend/safe-area-test.html', 'r', encoding='utf-8') as f:
+        content = f.read()
+    return web.Response(text=content, content_type='text/html')
+
+
 async def on_startup(app: web.Application):
     """
     Действия при запуске сервера
@@ -187,6 +202,9 @@ def create_app() -> web.Application:
     
     # Фронтенд мини-приложения
     app.router.add_get('/miniapp', serve_frontend)
+    
+    # Тестовая страница Safe Area
+    app.router.add_get('/safe-area-test', serve_safe_area_test)
     
     # Статические файлы
     app.router.add_static('/static/', path='frontend/static/', name='static')
