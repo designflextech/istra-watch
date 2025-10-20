@@ -6,7 +6,7 @@
 :root {
     --map-height-no-records: 50vh; /* Средний размер когда нет записей, кнопка видна */
     --map-height-single-record: 40vh; /* Меньше когда есть одна запись, кнопка видна */
-    --map-height-double-records: 70vh; /* Почти до низа когда есть 2 записи, кнопка НЕ видна */
+    --map-height-double-records: 50vh; /* Ограниченный размер когда есть 2 записи, кнопка НЕ видна */
     --map-min-height: 40vh;
     --map-button-gap: var(--space-32); /* Отступ между картой и кнопкой */
 }

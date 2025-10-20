@@ -32,6 +32,12 @@ export async function showRecordForm(recordType, user) {
     // Отображаем информацию о пользователе
     renderUserInfo(user);
     
+    // Очищаем комментарий
+    const commentField = document.getElementById('comment');
+    if (commentField) {
+        commentField.value = '';
+    }
+    
     // Сбрасываем выбранное фото
     resetPhotoSelection();
     

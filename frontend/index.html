@@ -16,7 +16,7 @@
     <meta name="pragma" content="no-cache">
     
     <title>Istra Watch</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=20241020-5">
+    <link rel="stylesheet" href="/static/css/style.css?v=20241020-6">
     <!-- Telegram Web App API -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- Optional: Telegram Apps SDK v3 -->
@@ -157,9 +157,9 @@
 
     <!-- Экран создания записи -->
     <div id="record-screen" class="screen">
-        <div class="screen-wrapper">
+        <div class="screen-wrapper" style="background: var(--bg-main);">
             <!-- Profile Header -->
-            <div class="profile-header">
+            <div class="profile-header" style="margin-top: var(--space-24);">
                 <div class="profile-container">
                     <img id="record-avatar" class="profile-avatar" alt="Avatar">
                     <span id="record-user-name" class="profile-name"></span>
@@ -170,7 +170,7 @@
             </div>
             
             <!-- Main Form -->
-            <form id="record-form" style="padding: 0 16px; margin-top: 32px; display: flex; flex-direction: column; gap: 32px;">
+            <form id="record-form" style="padding: 0 var(--page-padding-x); margin-top: 32px; display: flex; flex-direction: column; gap: 32px;">
                 <!-- Address Container -->
                 <div class="input-container" style="gap: 4px;">
                     <!-- Green Address Block -->

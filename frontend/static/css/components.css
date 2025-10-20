@@ -30,7 +30,7 @@
     cursor: not-allowed;
     transform: none;
     /* Сохраняем размер шрифта */
-    font-size: inherit;
+    font-size: inherit !important;
 }
 
 .btn-primary {
@@ -44,7 +44,7 @@
 }
 
 .btn-secondary {
-    background: linear-gradient(90deg, var(--bg-input) 0%, var(--bg-input) 100%), var(--bg-card);
+    background: var(--bg-input-unified);
     color: var(--text-primary);
     border-radius: var(--radius-full);
     padding: var(--space-8) var(--space-36);
@@ -119,7 +119,7 @@
 }
 
 .input-field {
-    background: var(--bg-input);
+    background: var(--bg-input-unified);
     border: none;
     border-radius: var(--radius-sm);
     padding: var(--space-12);
@@ -129,7 +129,8 @@
     font-weight: var(--font-weight-medium);
     line-height: var(--line-height-body);
     color: var(--text-primary);
-    resize: vertical;
+    resize: none;
+    overflow-y: auto;
 }
 
 .input-field::placeholder {
@@ -158,7 +159,7 @@
     width: 78px;
     height: 78px;
     border-radius: var(--radius-sm);
-    background: var(--bg-input);
+    background: var(--bg-input-unified);
     display: flex;
     align-items: center;
     justify-content: center;
