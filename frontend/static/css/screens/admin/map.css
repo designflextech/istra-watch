@@ -13,8 +13,8 @@
     height: calc(100vh - var(--nav-height) - 88px);
     border-radius: var(--radius-sm);
     overflow: hidden;
-    margin: 0 var(--space-16);
-    max-width: calc(100% - 32px);
+    margin: 0 var(--page-padding-x);
+    max-width: calc(100% - 2 * var(--page-padding-x));
 }
 
 .map-date-badge {

@@ -185,7 +185,6 @@ function renderEmployees(employees, date) {
                     <div class="employee-card-header">
                         <span class="employee-card-name">${user.name}</span>
                         <svg class="chevron-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <circle cx="8" cy="8" r="7.5" stroke="currentColor"/>
                             <path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                         </svg>
                     </div>

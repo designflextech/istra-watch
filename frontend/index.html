@@ -16,7 +16,7 @@
     <meta name="pragma" content="no-cache">
     
     <title>Istra Watch</title>
-    <link rel="stylesheet" href="/static/css/style.css?v=20241020-4">
+    <link rel="stylesheet" href="/static/css/style.css?v=20241020-5">
     <!-- Telegram Web App API -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- Optional: Telegram Apps SDK v3 -->
@@ -35,7 +35,7 @@
             <div class="admin-content" style="position: relative;">
                 <div class="screen-wrapper" style="padding-bottom: 0;">
                     <!-- Header -->
-                    <div class="header" style="padding-left: 16px; padding-right: 16px; padding-bottom: 16px; background: linear-gradient(90deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.02) 100%), #FFFFFF;">
+                    <div class="header sticky" style="padding-bottom: 16px;">
                         <h1 class="title-m" style="margin: 0;">Сотрудники</h1>
                         <span id="admin-date" class="date-text"></span>
                     </div>
@@ -44,7 +44,7 @@
                     <input type="date" id="date-input" style="display: none;" />
                     
                     <!-- Employees List -->
-                    <div id="employees-list" style="display: flex; flex-direction: column; gap: 6px; padding: 16px; padding-bottom: 120px;"></div>
+                    <div id="employees-list" style="display: flex; flex-direction: column; gap: 6px; padding-bottom: 120px;"></div>
                 </div>
             </div>
             
@@ -315,7 +315,7 @@
             <div class="admin-content" style="position: relative;">
                 <div class="screen-wrapper" style="padding-bottom: 0;">
                     <!-- Header -->
-                    <div class="header" style="padding-left: 16px; padding-right: 16px; padding-bottom: 16px; background: linear-gradient(90deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.02) 100%), #FFFFFF;">
+                    <div class="header sticky" style="padding-bottom: 16px;">
                         <h1 class="title-m" style="margin: 0;">Отчеты</h1>
                         <span id="reports-date" class="date-text"></span>
                     </div>

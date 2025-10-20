@@ -81,6 +81,9 @@
     --space-32: 32px;
     --space-36: 36px;
     
+    /* Page horizontal padding */
+    --page-padding-x: 20px;
+    
     /* === BORDER RADIUS === */
     --radius-xs: 12px;
     --radius-sm: 16px;
@@ -208,6 +211,14 @@ body {
     overflow-y: auto;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+}
+
+/* Sticky Header */
+.header.sticky {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: linear-gradient(90deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.02) 100%), #FFFFFF !important;
 }
 
 /* ============================================
@@ -351,8 +362,8 @@ body {
 .camera-header {
     /* Используем CSS env() для safe area + динамический padding от JS */
     padding-top: max(var(--header-padding-top), calc(var(--safe-area-inset-top) + 24px)) !important;
-    padding-left: max(16px, var(--safe-area-inset-left));
-    padding-right: max(16px, var(--safe-area-inset-right));
+    padding-left: max(var(--page-padding-x), var(--safe-area-inset-left));
+    padding-right: max(var(--page-padding-x), var(--safe-area-inset-right));
 }
 
 /* Дополнительная защита для iOS */
@@ -362,6 +373,8 @@ body {
     .employee-records-nav,
     .camera-header {
         padding-top: max(var(--header-padding-top), calc(var(--safe-area-inset-top) + 24px)) !important;
+        padding-left: max(var(--page-padding-x), var(--safe-area-inset-left));
+        padding-right: max(var(--page-padding-x), var(--safe-area-inset-right));
     }
 }
 
