@@ -97,11 +97,23 @@ class User:
     @staticmethod
     def get_by_telegram_handle(telegram_handle: str) -> Optional['User']:
         """Получение пользователя по Telegram handle"""
+        # Нормализуем handle: добавляем префикс '@' при отсутствии и игнорируем регистр
+        if not telegram_handle:
+            return None
+        handle = telegram_handle.strip()
+        if not handle:
+            return None
+        if not handle.startswith('@'):
+            handle = f"@{handle}"
+
         with get_db_connection() as conn:
             with get_db_cursor(conn) as cursor:
                 set_search_path(cursor)
                 users_table = qualified_table_name('users')
-                cursor.execute(f"SELECT * FROM {users_table} WHERE telegram_handle = %s", (telegram_handle,))
+                cursor.execute(
+                    f"SELECT * FROM {users_table} WHERE LOWER(telegram_handle) = LOWER(%s)",
+                    (handle,)
+                )
                 result = cursor.fetchone()
                 return User.from_dict(dict(result)) if result else None
     
