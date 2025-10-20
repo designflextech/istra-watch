@@ -99,6 +99,19 @@ class UserService:
         return User.get_by_telegram_id(telegram_id)
     
     @staticmethod
+    def get_user_by_telegram_handle(telegram_handle: str) -> Optional[User]:
+        """
+        Получение пользователя по Telegram handle
+        
+        Args:
+            telegram_handle: Telegram handle пользователя
+            
+        Returns:
+            Пользователь или None
+        """
+        return User.get_by_telegram_handle(telegram_handle)
+    
+    @staticmethod
     def update_user_telegram_id(user_id: int, telegram_id: int) -> Optional[User]:
         """
         Обновление Telegram ID пользователя
