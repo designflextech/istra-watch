@@ -120,11 +120,46 @@ make create-example       # Создание примера Excel
 - `GET /api/records/{id}` - Детали записи
 - `POST /api/records` - Создание записи
 
+## Вспомогательные скрипты
+
+В папке `scripts/` находятся полезные скрипты для управления системой:
+
+### Основные скрипты:
+- **`init_admin.py`** - добавление администратора в систему
+- **`add_employee.py`** - добавление сотрудника вручную
+- **`create_example_excel.py`** - создание примера Excel файла
+- **`generate_test_data.py`** - генерация тестовых данных для разработки
+
+### Утилиты:
+- **`delete_user_records.py`** - удаление записей пользователя
+- **`fill_missing_records.py`** - заполнение пропущенных записей
+- **`generate_report.py`** - генерация отчетов из командной строки
+- **`install_fonts.sh`** - установка шрифтов для PDF отчетов
+
+### Примеры использования:
+
+```bash
+# Добавить администратора
+python scripts/init_admin.py --telegram-id 123456789 --name "Иван Иванов" --handle "@ivanov"
+
+# Добавить сотрудника
+python scripts/add_employee.py --name "Петр Петров" --handle "@petrov"
+
+# Создать пример Excel файла
+python scripts/create_example_excel.py
+
+# Сгенерировать тестовые данные
+python scripts/generate_test_data.py
+```
+
 ## Полезные ссылки
 
 - Полная документация: [README.md](README.md)
 - Развертывание: [DEPLOYMENT.md](DEPLOYMENT.md)
-- Тестирование: [TESTING.md](TESTING.md)
+- Архитектура: [ARCHITECTURE.md](ARCHITECTURE.md)
+- Руководство администратора: [USER_GUIDE_ADMIN.md](USER_GUIDE_ADMIN.md)
+- Руководство работника: [USER_GUIDE_WORKER.md](USER_GUIDE_WORKER.md)
+- Отладка: [DEBUG_GUIDE.md](DEBUG_GUIDE.md)
 
 ## Получение токенов и ключей
 
@@ -170,10 +205,18 @@ make create-example       # Создание примера Excel
 - URL использует HTTPS
 - Файлы в frontend/ существуют
 
+## Отладка и диагностика
+
+Для отладки проблем используйте:
+- **Debug Box** - встроенный инструмент отладки в мини-приложении (см. [DEBUG_GUIDE.md](DEBUG_GUIDE.md))
+- **Логи сервера** - проверьте вывод `main.py` на наличие ошибок
+- **Проверка webhook** - убедитесь, что ngrok работает и URL актуален
+
 ## Поддержка
 
 Если что-то не работает:
-1. Проверьте логи
-2. Ознакомьтесь с [TESTING.md](TESTING.md)
-3. Создайте issue с подробным описанием проблемы
+1. Проверьте логи сервера
+2. Используйте Debug Box в мини-приложении
+3. Ознакомьтесь с [DEBUG_GUIDE.md](DEBUG_GUIDE.md)
+4. Создайте issue с подробным описанием проблемы
 
