@@ -22,6 +22,18 @@ async def start_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     # Проверяем, является ли пользователь администратором
     if is_admin(user.id):
+        # Проверяем, есть ли запись администратора в БД (мог быть загружен через Excel)
+        # Если есть - обновляем telegram_id, чтобы он не попадал в отчеты
+        db_user = UserService.get_user_by_telegram_id(user.id)
+        
+        if not db_user and user.username:
+            db_user = UserService.get_user_by_telegram_handle(user.username)
+            
+            if db_user and not db_user.telegram_id:
+                print(f"DEBUG: Обновляем telegram_id для администратора {db_user.name}")
+                db_user.telegram_id = user.id
+                db_user.update()
+        
         message = (
             f"Добро пожаловать, {user.first_name}! 👋\n\n"
             "🛡️Вы вошли как администратор\n\n"
