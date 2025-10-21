@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from bot.models.user import User
 from bot.models.address import Address
 from bot.models.record import Record
+from bot.utils.timezone import now_msk, today_msk, MSK
 
 
 def fill_missing_records(start_date_str: str, end_date_str: str = None):
@@ -22,17 +23,17 @@ def fill_missing_records(start_date_str: str, end_date_str: str = None):
     """
     print("🚀 Начинаем заполнение недостающих записей...")
     
-    # Парсим даты
+    # Парсим даты (используем московское время)
     start_date = datetime.strptime(start_date_str, '%Y-%m-%d').replace(
-        hour=0, minute=0, second=0, microsecond=0
+        hour=0, minute=0, second=0, microsecond=0, tzinfo=MSK
     )
     
     if end_date_str:
         end_date = datetime.strptime(end_date_str, '%Y-%m-%d').replace(
-            hour=0, minute=0, second=0, microsecond=0
+            hour=0, minute=0, second=0, microsecond=0, tzinfo=MSK
         )
     else:
-        end_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = now_msk().replace(hour=0, minute=0, second=0, microsecond=0)
     
     print(f"📅 Период: {start_date.strftime('%Y-%m-%d')} → {end_date.strftime('%Y-%m-%d')}")
     

@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from bot.services.report_generator import generate_discipline_report
 from bot.utils.database import init_connection_pool, close_connection_pool
+from bot.utils.timezone import today_msk
 
 
 def main():
@@ -18,8 +19,8 @@ def main():
     
     try:
         # Параметры периода (можно изменить)
-        # По умолчанию - текущий месяц
-        today = date.today()
+        # По умолчанию - текущий месяц (московское время)
+        today = today_msk()
         date_from = date(today.year, today.month, 1)
         date_to = today
         

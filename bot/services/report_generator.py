@@ -6,6 +6,7 @@ from io import BytesIO
 from weasyprint import HTML
 
 from bot.utils.database import get_db_connection, get_db_cursor, set_search_path, qualified_table_name
+from bot.utils.timezone import now_msk, msk_date_range_utc
 from bot.config import TELEGRAM_ADMIN_IDS
 
 
@@ -19,7 +20,7 @@ class DisciplineReportGenerator:
     def __init__(self, date_from: date, date_to: date):
         self.date_from = date_from
         self.date_to = date_to
-        self.report_date = datetime.now()
+        self.report_date = now_msk()  # Используем московское время
         
     def _get_work_days_count(self) -> int:
         """Подсчет рабочих дней"""

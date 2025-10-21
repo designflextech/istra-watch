@@ -9,6 +9,7 @@ from bot.services.record_service import RecordService
 from bot.services.report_generator import generate_discipline_report
 from bot.models.record import Record
 from bot.models.user import User
+from bot.utils.timezone import today_msk
 
 logger = logging.getLogger(__name__)
 
@@ -115,10 +116,10 @@ async def get_employees_status(request: web.Request) -> web.Response:
         except ValueError:
             raise ValueError('Неверный формат даты. Используйте YYYY-MM-DD')
     else:
-        target_date = date.today()
+        target_date = today_msk()  # Используем московское время
     
     # Проверяем, что дата не старше 1 месяца
-    one_month_ago = date.today() - timedelta(days=30)
+    one_month_ago = today_msk() - timedelta(days=30)
     if target_date < one_month_ago:
         raise ValueError('Дата не может быть старше 1 месяца')
     
@@ -348,8 +349,8 @@ async def get_current_locations(request: web.Request) -> web.Response:
     Returns:
         JSON ответ со списком сотрудников и их текущими местоположениями
     """
-    # Получаем сегодняшние записи всех сотрудников
-    today = date.today()
+    # Получаем сегодняшние записи всех сотрудников (MSK)
+    today = today_msk()
     employees_data = RecordService.get_records_by_date(today)
     
     logger.info(f"Total employees with records today: {len(employees_data)}")
@@ -432,8 +433,8 @@ async def get_user_today_status(request: web.Request) -> web.Response:
             status=404
         )
     
-    # Получаем записи за сегодня с адресами
-    today = date.today()
+    # Получаем записи за сегодня с адресами (MSK)
+    today = today_msk()
     records_today = Record.get_by_user_and_date_with_addresses(user.id, today)
     
     # Временная отладка
@@ -537,10 +538,10 @@ async def get_employee_records(request: web.Request) -> web.Response:
                 status=400
             )
     else:
-        target_date = date.today()
+        target_date = today_msk()  # Используем московское время
     
     # Проверяем, что дата не старше 1 месяца
-    one_month_ago = date.today() - timedelta(days=30)
+    one_month_ago = today_msk() - timedelta(days=30)
     if target_date < one_month_ago:
         return web.json_response(
             {'error': 'Дата не может быть старше 1 месяца'},

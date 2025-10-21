@@ -14,6 +14,7 @@ from bot.config import (
     S3_BUCKET_NAME,
     S3_PUBLIC_URL
 )
+from bot.utils.timezone import now_msk
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,7 @@ class S3Service:
         Returns:
             Путь к файлу в формате: photos/{user_id}/{record_id}/photo_{timestamp}_{uuid}.{ext}
         """
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        timestamp = now_msk().strftime('%Y%m%d_%H%M%S')  # Используем московское время
         unique_id = uuid.uuid4().hex[:8]
         filename = f"photo_{timestamp}_{unique_id}.{extension}"
         

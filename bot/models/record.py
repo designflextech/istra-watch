@@ -2,6 +2,7 @@
 from typing import Optional, List, Dict, Any
 from datetime import datetime, date
 from bot.utils.database import get_db_connection, get_db_cursor, set_search_path, qualified_table_name
+from bot.utils.timezone import now_msk, today_msk, msk_date_range_utc
 
 
 class Record:
@@ -70,7 +71,7 @@ class Record:
     ) -> 'Record':
         """Создание новой записи"""
         if timestamp is None:
-            timestamp = datetime.now()
+            timestamp = now_msk()  # Используем московское время
         
         with get_db_connection() as conn:
             with get_db_cursor(conn) as cursor:
@@ -128,7 +129,9 @@ class Record:
     
     @staticmethod
     def get_by_user_and_date(user_id: int, target_date: date) -> List['Record']:
-        """Получение записей пользователя за определенную дату"""
+        """Получение записей пользователя за определенную дату (MSK)"""
+        start_utc, end_utc = msk_date_range_utc(target_date)
+        
         with get_db_connection() as conn:
             with get_db_cursor(conn) as cursor:
                 set_search_path(cursor)
@@ -137,17 +140,19 @@ class Record:
                     f"""
                     SELECT * FROM {records_table} 
                     WHERE user_id = %s 
-                    AND DATE(timestamp) = %s
+                    AND timestamp >= %s AND timestamp <= %s
                     ORDER BY timestamp DESC
                     """,
-                    (user_id, target_date)
+                    (user_id, start_utc, end_utc)
                 )
                 results = cursor.fetchall()
                 return [Record.from_dict(dict(row)) for row in results]
     
     @staticmethod
     def get_latest_by_user_and_date(user_id: int, target_date: date) -> Optional['Record']:
-        """Получение последней записи пользователя за определенную дату"""
+        """Получение последней записи пользователя за определенную дату (MSK)"""
+        start_utc, end_utc = msk_date_range_utc(target_date)
+        
         with get_db_connection() as conn:
             with get_db_cursor(conn) as cursor:
                 set_search_path(cursor)
@@ -156,18 +161,20 @@ class Record:
                     f"""
                     SELECT * FROM {records_table} 
                     WHERE user_id = %s 
-                    AND DATE(timestamp) = %s
+                    AND timestamp >= %s AND timestamp <= %s
                     ORDER BY timestamp DESC
                     LIMIT 1
                     """,
-                    (user_id, target_date)
+                    (user_id, start_utc, end_utc)
                 )
                 result = cursor.fetchone()
                 return Record.from_dict(dict(result)) if result else None
     
     @staticmethod
     def get_all_by_date(target_date: date) -> List['Record']:
-        """Получение всех записей за определенную дату"""
+        """Получение всех записей за определенную дату (MSK)"""
+        start_utc, end_utc = msk_date_range_utc(target_date)
+        
         with get_db_connection() as conn:
             with get_db_cursor(conn) as cursor:
                 set_search_path(cursor)
@@ -175,10 +182,10 @@ class Record:
                 cursor.execute(
                     f"""
                     SELECT * FROM {records_table} 
-                    WHERE DATE(timestamp) = %s
+                    WHERE timestamp >= %s AND timestamp <= %s
                     ORDER BY timestamp DESC
                     """,
-                    (target_date,)
+                    (start_utc, end_utc)
                 )
                 results = cursor.fetchall()
                 return [Record.from_dict(dict(row)) for row in results]
@@ -208,11 +215,13 @@ class Record:
         Получение всех записей за дату с информацией о пользователях и адресах (оптимизировано с JOIN)
         
         Args:
-            target_date: Целевая дата
+            target_date: Целевая дата (MSK)
             
         Returns:
             Список словарей с пользователями и их последними записями за дату
         """
+        start_utc, end_utc = msk_date_range_utc(target_date)
+        
         with get_db_connection() as conn:
             with get_db_cursor(conn) as cursor:
                 set_search_path(cursor)
@@ -253,14 +262,14 @@ class Record:
                     LEFT JOIN LATERAL (
                         SELECT * FROM {records_table} 
                         WHERE user_id = u.id 
-                        AND DATE(timestamp) = %s
+                        AND timestamp >= %s AND timestamp <= %s
                         ORDER BY timestamp DESC 
                         LIMIT 1
                     ) r ON true
                     LEFT JOIN {addresses_table} a ON r.address_id = a.id
                     ORDER BY u.name
                     """,
-                    (target_date,)
+                    (start_utc, end_utc)
                 )
                 results = cursor.fetchall()
                 
@@ -499,11 +508,13 @@ class Record:
         
         Args:
             user_id: ID пользователя
-            target_date: Целевая дата
+            target_date: Целевая дата (MSK)
             
         Returns:
             Список словарей с записями и адресами
         """
+        start_utc, end_utc = msk_date_range_utc(target_date)
+        
         with get_db_connection() as conn:
             with get_db_cursor(conn) as cursor:
                 set_search_path(cursor)
@@ -534,10 +545,10 @@ class Record:
                     FROM {records_table} r
                     LEFT JOIN {addresses_table} a ON r.address_id = a.id
                     WHERE r.user_id = %s
-                    AND DATE(r.timestamp) = %s
+                    AND r.timestamp >= %s AND r.timestamp <= %s
                     ORDER BY r.timestamp DESC
                     """,
-                    (user_id, target_date)
+                    (user_id, start_utc, end_utc)
                 )
                 results = cursor.fetchall()
                 
@@ -583,11 +594,13 @@ class Record:
         Получение всех пользователей с их записями arrival и departure за дату (оптимизировано с LATERAL JOIN)
         
         Args:
-            target_date: Целевая дата
+            target_date: Целевая дата (MSK)
             
         Returns:
             Список словарей с пользователями, их arrival_record и departure_record
         """
+        start_utc, end_utc = msk_date_range_utc(target_date)
+        
         with get_db_connection() as conn:
             with get_db_cursor(conn) as cursor:
                 set_search_path(cursor)
@@ -627,7 +640,7 @@ class Record:
                     LEFT JOIN LATERAL (
                         SELECT * FROM {records_table} 
                         WHERE user_id = u.id 
-                        AND DATE(timestamp) = %s
+                        AND timestamp >= %s AND timestamp <= %s
                         AND record_type = 'arrival'
                         ORDER BY timestamp DESC 
                         LIMIT 1
@@ -636,7 +649,7 @@ class Record:
                     LEFT JOIN LATERAL (
                         SELECT * FROM {records_table} 
                         WHERE user_id = u.id 
-                        AND DATE(timestamp) = %s
+                        AND timestamp >= %s AND timestamp <= %s
                         AND record_type = 'departure'
                         ORDER BY timestamp DESC 
                         LIMIT 1
@@ -644,7 +657,7 @@ class Record:
                     LEFT JOIN {addresses_table} dep_addr ON dep.address_id = dep_addr.id
                     ORDER BY u.name
                     """,
-                    (target_date, target_date)
+                    (start_utc, end_utc, start_utc, end_utc)
                 )
                 results = cursor.fetchall()
                 

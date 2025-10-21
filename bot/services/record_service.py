@@ -6,6 +6,7 @@ from bot.models.address import Address
 from bot.services.yandex_maps import YandexMapsService
 from bot.services.s3_service import S3Service
 from bot.services.image_processor import ImageProcessor
+from bot.utils.timezone import now_msk
 import logging
 
 logger = logging.getLogger(__name__)
@@ -169,7 +170,7 @@ class RecordService:
         
         # Обновление записи в БД
         record.photo_url = photo_url
-        record.photo_uploaded_at = datetime.now()
+        record.photo_uploaded_at = now_msk()  # Используем московское время
         record = record.update()
         
         logger.info(f"Photo uploaded for record {record_id}: {photo_url}")

@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from bot.models.user import User
 from bot.models.address import Address
 from bot.models.record import Record
+from bot.utils.timezone import now_msk, MSK
 
 
 def generate_test_data():
@@ -96,7 +97,7 @@ def generate_test_data():
     # 3. Создаем записи о приходах/уходах за последнюю неделю
     print("\n📝 Создаем записи о приходах/уходах за последнюю неделю...")
     
-    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    today = now_msk().replace(hour=0, minute=0, second=0, microsecond=0)  # Используем московское время
     total_records = 0
     
     # Проходим по последним 7 дням (включая сегодня)
