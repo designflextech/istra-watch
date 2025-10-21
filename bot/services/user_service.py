@@ -24,6 +24,7 @@ class UserService:
             sheet = workbook.active
             
             added = 0
+            updated = 0
             skipped = 0
             errors = []
             
@@ -48,9 +49,17 @@ class UserService:
                     # Проверяем, существует ли пользователь по telegram_handle
                     existing_user = User.get_by_telegram_handle(telegram_handle)
                     
-                    # Дополнительная проверка: проверяем, нет ли пользователя с таким же именем
-                    # (защита от случайного создания дубликатов)
-                    if not existing_user:
+                    if existing_user:
+                        # Если пользователь найден, проверяем нужно ли обновить имя
+                        if existing_user.name != name:
+                            existing_user.name = name
+                            existing_user.update()
+                            updated += 1
+                        else:
+                            skipped += 1
+                    else:
+                        # Дополнительная проверка: проверяем, нет ли пользователя с таким же именем
+                        # (защита от случайного создания дубликатов)
                         from bot.utils.database import get_db_connection, get_db_cursor, set_search_path, qualified_table_name
                         with get_db_connection() as conn:
                             with get_db_cursor(conn) as cursor:
@@ -65,10 +74,7 @@ class UserService:
                                     errors.append(f"Строка {row_idx}: пользователь с именем '{name}' уже существует")
                                     skipped += 1
                                     continue
-                    
-                    if existing_user:
-                        skipped += 1
-                    else:
+                        
                         # Создаем нового пользователя (telegram_id будет заполнен при первом входе)
                         User.create(
                             name=name,
@@ -82,6 +88,7 @@ class UserService:
             return {
                 'success': True,
                 'added': added,
+                'updated': updated,
                 'skipped': skipped,
                 'errors': errors
             }

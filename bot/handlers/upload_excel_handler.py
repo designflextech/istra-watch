@@ -97,6 +97,9 @@ async def excel_file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
             if result.get('added', 0) > 0:
                 message_parts.append(f"➕ Добавлено: {result['added']}")
             
+            if result.get('updated', 0) > 0:
+                message_parts.append(f"🔄 Обновлено: {result['updated']}")
+            
             if result.get('skipped', 0) > 0:
                 message_parts.append(f"⏭️ Пропущено: {result['skipped']}")
             
