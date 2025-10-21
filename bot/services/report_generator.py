@@ -17,15 +17,19 @@ class DisciplineReportGenerator:
     WORK_START = time(WORK_START_HOUR, 0)
     WORK_END = time(WORK_END_HOUR, 0)
     
+    # Дата начала учета посещаемости
+    TRACKING_START_DATE = date(2025, 10, 21)
+    
     def __init__(self, date_from: date, date_to: date):
         self.date_from = date_from
         self.date_to = date_to
         self.report_date = now_msk()  # Используем московское время
         
     def _get_work_days_count(self) -> int:
-        """Подсчет рабочих дней"""
+        """Подсчет рабочих дней с учетом даты начала учета"""
         count = 0
-        current = self.date_from
+        # Начинаем считать с максимальной даты между началом периода и датой начала учета
+        current = max(self.date_from, self.TRACKING_START_DATE)
         while current <= self.date_to:
             if current.weekday() < 5:
                 count += 1
@@ -290,7 +294,6 @@ class DisciplineReportGenerator:
                     <td>{stats['late_count']}</td>
                     <td>{stats['early_leave_count']}</td>
                     <td>{stats['missed_days']}</td>
-                    <td>{stats['photo_count']}</td>
                     <td>{stats['comment_count']}</td>
                 </tr>
             """
@@ -453,7 +456,6 @@ class DisciplineReportGenerator:
                 <th>🚨 Опозданий<br/>(&gt;{self.WORK_START.strftime('%H:%M')})</th>
                 <th>🛑 Ранних уходов<br/>(&lt;{self.WORK_END.strftime('%H:%M')})</th>
                 <th>❌ Пропусков<br/>(дней)</th>
-                <th>📸 Фото</th>
                 <th>📝 Комм.</th>
             </tr>
         </thead>
