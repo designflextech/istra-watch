@@ -7,15 +7,15 @@ from weasyprint import HTML
 
 from bot.utils.database import get_db_connection, get_db_cursor, set_search_path, qualified_table_name
 from bot.utils.timezone import now_msk, msk_date_range_utc
-from bot.config import TELEGRAM_ADMIN_IDS
+from bot.config import TELEGRAM_ADMIN_IDS, WORK_START_HOUR, WORK_END_HOUR
 
 
 class DisciplineReportGenerator:
     """Генератор отчетов о дисциплине сотрудников"""
     
-    # Рабочее время
-    WORK_START = time(9, 0)
-    WORK_END = time(18, 0)
+    # Рабочее время (из переменных окружения)
+    WORK_START = time(WORK_START_HOUR, 0)
+    WORK_END = time(WORK_END_HOUR, 0)
     
     def __init__(self, date_from: date, date_to: date):
         self.date_from = date_from
@@ -417,8 +417,8 @@ class DisciplineReportGenerator:
     <div class="info">
         <strong>Период отчёта:</strong> {self.date_from.strftime('%d.%m.%Y')} — {self.date_to.strftime('%d.%m.%Y')}<br/>
         <strong>Дата формирования отчёта:</strong> {self.report_date.strftime('%d.%m.%Y')}<br/>
-        🕘 <strong>Начало рабочего дня:</strong> 09:00<br/>
-        🕕 <strong>Окончание рабочего дня:</strong> 18:00
+        🕘 <strong>Начало рабочего дня:</strong> {self.WORK_START.strftime('%H:%M')}<br/>
+        🕕 <strong>Окончание рабочего дня:</strong> {self.WORK_END.strftime('%H:%M')}
     </div>
     
     <h2>📍 Сводные показатели</h2>
@@ -434,8 +434,8 @@ class DisciplineReportGenerator:
             <tr><td>🕓 Среднее время прихода</td><td>{self._format_time(summary_stats['avg_arrival'])}</td></tr>
             <tr><td>🕒 Среднее время ухода</td><td>{self._format_time(summary_stats['avg_departure'])}</td></tr>
             <tr><td>📌 Кол-во рабочих дней в периоде</td><td>{summary_stats['work_days']}</td></tr>
-            <tr><td>🛑 Кол-во опозданий (после 09:00)</td><td>{summary_stats['total_late']}</td></tr>
-            <tr><td>⚠ Кол-во ранних уходов (до 18:00)</td><td>{summary_stats['total_early_leave']}</td></tr>
+            <tr><td>🛑 Кол-во опозданий (после {self.WORK_START.strftime('%H:%M')})</td><td>{summary_stats['total_late']}</td></tr>
+            <tr><td>⚠ Кол-во ранних уходов (до {self.WORK_END.strftime('%H:%M')})</td><td>{summary_stats['total_early_leave']}</td></tr>
             <tr><td>❌ Кол-во пропущенных дней</td><td>{summary_stats['total_missed']}</td></tr>
             <tr><td>📝 Среднее кол-во комментариев</td><td>{summary_stats['avg_comments_per_employee_per_day']} на сотрудника в день</td></tr>
             <tr><td>📷 Отметок с фото</td><td>{summary_stats['total_photos']}</td></tr>
@@ -450,8 +450,8 @@ class DisciplineReportGenerator:
                 <th>📆 Отметок<br/>всего</th>
                 <th>🕘 Ср. время<br/>прихода</th>
                 <th>🕕 Ср. время<br/>ухода</th>
-                <th>🚨 Опозданий<br/>(&gt;09:00)</th>
-                <th>🛑 Ранних уходов<br/>(&lt;18:00)</th>
+                <th>🚨 Опозданий<br/>(&gt;{self.WORK_START.strftime('%H:%M')})</th>
+                <th>🛑 Ранних уходов<br/>(&lt;{self.WORK_END.strftime('%H:%M')})</th>
                 <th>❌ Пропусков<br/>(дней)</th>
                 <th>📸 Фото</th>
                 <th>📝 Комм.</th>
@@ -468,7 +468,7 @@ class DisciplineReportGenerator:
         • <strong>🔴 Топ-3 по опозданиям:</strong> {', '.join(late_employees) if late_employees else 'Нет данных'}<br/>
         • <strong>⏰ Среднее опоздание:</strong> {avg_late} мин<br/>
         • <strong>🕔 Средний ранний уход:</strong> {avg_early} мин<br/>
-        • <strong>📊 Самые частые нарушения</strong> — с 09:00 до 09:30 (утро) и с 17:30 до 18:00 (вечер)
+        • <strong>📊 Самые частые нарушения</strong> — с {self.WORK_START.strftime('%H:%M')} до {(datetime.combine(date.today(), self.WORK_START) + timedelta(minutes=30)).time().strftime('%H:%M')} (утро) и с {(datetime.combine(date.today(), self.WORK_END) - timedelta(minutes=30)).time().strftime('%H:%M')} до {self.WORK_END.strftime('%H:%M')} (вечер)
     </div>
     
     <h2>📌 Вывод</h2>

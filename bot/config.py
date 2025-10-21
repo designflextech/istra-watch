@@ -28,6 +28,10 @@ YANDEX_MAPS_API_KEY = os.getenv('YANDEX_MAPS_API_KEY')
 # Mini App Configuration
 MINI_APP_URL = os.getenv('MINI_APP_URL')
 
+# Work Time Configuration
+WORK_START_HOUR = int(os.getenv('WORK_START_HOUR', 9))
+WORK_END_HOUR = int(os.getenv('WORK_END_HOUR', 18))
+
 # S3 Configuration (TWC Storage)
 S3_ENDPOINT_URL = os.getenv('S3_ENDPOINT_URL', 'https://s3.twcstorage.ru')
 S3_REGION = os.getenv('S3_REGION', 'ru-1')
