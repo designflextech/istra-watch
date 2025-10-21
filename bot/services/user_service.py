@@ -45,8 +45,26 @@ class UserService:
                         telegram_handle = f"@{telegram_handle}"
                     telegram_handle = telegram_handle.lower()
                     
-                    # Проверяем, существует ли пользователь
+                    # Проверяем, существует ли пользователь по telegram_handle
                     existing_user = User.get_by_telegram_handle(telegram_handle)
+                    
+                    # Дополнительная проверка: проверяем, нет ли пользователя с таким же именем
+                    # (защита от случайного создания дубликатов)
+                    if not existing_user:
+                        from bot.utils.database import get_db_connection, get_db_cursor, set_search_path, qualified_table_name
+                        with get_db_connection() as conn:
+                            with get_db_cursor(conn) as cursor:
+                                set_search_path(cursor)
+                                users_table = qualified_table_name('users')
+                                cursor.execute(
+                                    f"SELECT * FROM {users_table} WHERE LOWER(name) = LOWER(%s)",
+                                    (name,)
+                                )
+                                duplicate_name = cursor.fetchone()
+                                if duplicate_name:
+                                    errors.append(f"Строка {row_idx}: пользователь с именем '{name}' уже существует")
+                                    skipped += 1
+                                    continue
                     
                     if existing_user:
                         skipped += 1
