@@ -33,6 +33,9 @@ services:
       S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
       S3_BUCKET_NAME: ${S3_BUCKET_NAME}
       S3_PUBLIC_URL: ${S3_PUBLIC_URL}
+
+      WORK_START_HOUR: ${WORK_START_HOUR}
+      WORK_END_HOUR: ${WORK_END_HOUR}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.istra-geo-bot.entrypoints=websecure"
