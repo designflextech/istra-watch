@@ -92,9 +92,25 @@ async def excel_file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
         
         # Формируем сообщение с результатами
         if result['success']:
-            message = "✅ Сотрудники добавлены!\n\nТеперь у них есть доступ к Боту и Мини-приложению"
+            message_parts = ["✅ Обработка завершена!"]
+            
+            if result.get('added', 0) > 0:
+                message_parts.append(f"➕ Добавлено: {result['added']}")
+            
+            if result.get('skipped', 0) > 0:
+                message_parts.append(f"⏭️ Пропущено: {result['skipped']}")
+            
+            if result.get('errors'):
+                message_parts.append(f"\n⚠️ Ошибки ({len(result['errors'])}):")
+                for error in result['errors'][:5]:  # Показываем только первые 5 ошибок
+                    message_parts.append(f"• {error}")
+                if len(result['errors']) > 5:
+                    message_parts.append(f"• ... и еще {len(result['errors']) - 5} ошибок")
+            
+            message_parts.append("\nТеперь у сотрудников есть доступ к Боту и Мини-приложению")
+            message = "\n".join(message_parts)
         else:
-            message = "❌ Ошибка!\nПроверьте, правильно ли заполнена таблица"
+            message = f"❌ Ошибка!\n{result.get('error', 'Неизвестная ошибка')}"
         
         await update.message.reply_text(message)
         

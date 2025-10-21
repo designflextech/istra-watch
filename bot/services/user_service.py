@@ -50,6 +50,7 @@ class UserService:
                     if existing_user:
                         skipped += 1
                     else:
+                        # Создаем нового пользователя (telegram_id будет заполнен при первом входе)
                         User.create(
                             name=name,
                             telegram_handle=telegram_handle
