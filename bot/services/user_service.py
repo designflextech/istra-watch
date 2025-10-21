@@ -40,9 +40,10 @@ class UserService:
                         errors.append(f"Строка {row_idx}: пропущены обязательные поля")
                         continue
                     
-                    # Убираем @ из начала telegram_handle, если есть
-                    if telegram_handle.startswith('@'):
-                        telegram_handle = telegram_handle[1:]
+                    # Нормализуем handle: добавляем @ если его нет и приводим к нижнему регистру
+                    if not telegram_handle.startswith('@'):
+                        telegram_handle = f"@{telegram_handle}"
+                    telegram_handle = telegram_handle.lower()
                     
                     # Проверяем, существует ли пользователь
                     existing_user = User.get_by_telegram_handle(telegram_handle)
