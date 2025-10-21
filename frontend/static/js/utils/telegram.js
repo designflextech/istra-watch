@@ -31,6 +31,9 @@ export class TelegramSDK {
             
             this.tg.ready();
             
+            // Устанавливаем белый цвет header для лучшей видимости статус-бара на iPhone
+            this.tg.setHeaderColor('#ffffff');
+            
             // Раскрываем в полный экран только на мобильных устройствах
             const isMobile = this.tg.platform === 'android' || this.tg.platform === 'ios';
             if (isMobile) {
