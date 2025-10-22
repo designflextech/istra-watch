@@ -350,7 +350,7 @@ body {
    ============================================ */
 /* Support for Telegram fullscreen mode with safe areas */
 :root {
-    --header-padding-top: 24px; /* default value, will be overridden by JS */
+    --header-padding-top: 32px; /* default value, will be overridden by JS */
     --safe-area-inset-top: env(safe-area-inset-top, 0px);
     --safe-area-inset-bottom: env(safe-area-inset-bottom, 0px);
     --safe-area-inset-left: env(safe-area-inset-left, 0px);
@@ -362,7 +362,7 @@ body {
 .employee-records-nav,
 .camera-header {
     /* Используем CSS env() для safe area + динамический padding от JS */
-    padding-top: max(var(--header-padding-top), calc(var(--safe-area-inset-top) + 24px)) !important;
+    padding-top: max(var(--header-padding-top), calc(var(--safe-area-inset-top) + 32px)) !important;
     padding-left: max(var(--page-padding-x), var(--safe-area-inset-left));
     padding-right: max(var(--page-padding-x), var(--safe-area-inset-right));
 }
@@ -373,7 +373,7 @@ body {
     .profile-header,
     .employee-records-nav,
     .camera-header {
-        padding-top: max(var(--header-padding-top), calc(var(--safe-area-inset-top) + 24px)) !important;
+        padding-top: max(var(--header-padding-top), calc(var(--safe-area-inset-top) + 32px)) !important;
         padding-left: max(var(--page-padding-x), var(--safe-area-inset-left));
         padding-right: max(var(--page-padding-x), var(--safe-area-inset-right));
     }
@@ -386,7 +386,7 @@ body {
     .employee-records-nav,
     .camera-header {
         /* Для iOS используем более агрессивный подход */
-        padding-top: max(var(--header-padding-top), calc(var(--safe-area-inset-top) + 42px)) !important;
+        padding-top: max(var(--header-padding-top), calc(var(--safe-area-inset-top) + 50px)) !important;
     }
 }
 
@@ -400,7 +400,7 @@ body {
     .profile-header,
     .employee-records-nav,
     .camera-header {
-        padding-top: max(var(--header-padding-top), 70px) !important;
+        padding-top: max(var(--header-padding-top), 80px) !important;
     }
 }
 
