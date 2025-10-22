@@ -18,7 +18,7 @@ let selectedPhoto = null;
 function updateSubmitButtonState() {
     const submitBtn = document.querySelector('.submit-btn');
     if (submitBtn) {
-        submitBtn.disabled = !selectedPhoto;
+        submitBtn.disabled = false; // Фото больше не обязательно
     }
 }
 
@@ -320,7 +320,7 @@ async function handleFormSubmit(e, user) {
         const recordId = response.record.id;
         console.log('Record created:', recordId);
         
-        // 2. Если есть фото, загружаем его
+        // 2. Если есть фото, загружаем его (опционально)
         if (selectedPhoto) {
             submitBtn.textContent = 'Загрузка фото...';
             console.log('Uploading photo for record:', recordId);
@@ -331,7 +331,7 @@ async function handleFormSubmit(e, user) {
             } catch (error) {
                 console.error('Photo upload failed:', error);
                 // Не прерываем процесс, запись уже создана
-                throw new Error(`Запись сохранена, но фото не загружено: ${error.message}`);
+                console.warn(`Запись сохранена, но фото не загружено: ${error.message}`);
             }
         }
         
