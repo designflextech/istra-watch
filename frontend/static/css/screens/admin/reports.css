@@ -67,6 +67,11 @@
     border-color: var(--accent-color);
 }
 
+/* Принудительное выравнивание по левому краю для мобильных браузеров */
+input[type="date"].form-input {
+    text-align: left !important;
+}
+
 .report-status {
     min-height: 30px;
     font-size: var(--font-size-body-m);
