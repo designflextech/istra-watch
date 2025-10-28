@@ -70,6 +70,40 @@
 /* Принудительное выравнивание по левому краю для мобильных браузеров */
 input[type="date"].form-input {
     text-align: left !important;
+    text-align-last: left !important;
+    direction: ltr !important;
+    -webkit-text-align: left !important;
+    -moz-text-align: left !important;
+    padding-left: var(--space-12) !important;
+    padding-right: var(--space-12) !important;
+}
+
+/* Дополнительные стили для мобильных браузеров */
+@media (max-width: 768px) {
+    input[type="date"].form-input {
+        text-align: left !important;
+        text-align-last: left !important;
+        direction: ltr !important;
+        -webkit-appearance: none;
+        -moz-appearance: textfield;
+        appearance: none;
+        padding-left: var(--space-12) !important;
+        padding-right: var(--space-12) !important;
+        /* Дополнительные стили для принудительного выравнивания */
+        -webkit-text-align: left !important;
+        -moz-text-align: left !important;
+    }
+    
+    /* Для iOS Safari */
+    input[type="date"].form-input::-webkit-datetime-edit-text {
+        text-align: left !important;
+    }
+    
+    input[type="date"].form-input::-webkit-datetime-edit-month-field,
+    input[type="date"].form-input::-webkit-datetime-edit-day-field,
+    input[type="date"].form-input::-webkit-datetime-edit-year-field {
+        text-align: left !important;
+    }
 }
 
 .report-status {
