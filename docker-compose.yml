@@ -36,6 +36,7 @@ services:
 
       WORK_START_HOUR: ${WORK_START_HOUR}
       WORK_END_HOUR: ${WORK_END_HOUR}
+      ALLOW_ADMIN_DESKTOP: ${ALLOW_ADMIN_DESKTOP:-true}
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.istra-geo-bot.entrypoints=websecure"

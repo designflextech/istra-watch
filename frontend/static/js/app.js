@@ -283,37 +283,152 @@ class App {
      * Показать сообщение о необходимости использования смартфона
      */
     showMobileOnlyMessage() {
-        // Создаем overlay с использованием существующих стилей приложения
-        const overlay = document.createElement('div');
-        overlay.className = 'modal-overlay';
-        overlay.style.zIndex = '10000'; // Поверх всего
+        // Создаем полноэкранный контейнер
+        const fullscreenContainer = document.createElement('div');
+        fullscreenContainer.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.02) 100%), #FFFFFF;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0 16px;
+            overflow: hidden;
+        `;
         
-        // Создаем модальное окно с использованием существующих стилей
-        const modal = document.createElement('div');
-        modal.className = 'modal-content';
-        modal.style.textAlign = 'center';
-        modal.style.maxWidth = '343px';
+        // Контейнер для иллюстрации
+        const illustrationContainer = document.createElement('div');
+        illustrationContainer.style.cssText = `
+            width: 278px;
+            height: 278px;
+            position: relative;
+            margin-bottom: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        `;
         
-        // Иконка смартфона
-        const icon = document.createElement('div');
-        icon.style.fontSize = '64px';
-        icon.style.marginBottom = 'var(--space-16)';
-        icon.textContent = '📱';
+        // Концентрические круги (фон)
+        const circle1 = document.createElement('div');
+        circle1.style.cssText = `
+            position: absolute;
+            width: 278px;
+            height: 278px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.02);
+            top: 0;
+            left: 0;
+        `;
         
-        // Сообщение
-        const message = document.createElement('p');
-        message.style.fontSize = 'var(--font-size-body-l)';
-        message.style.fontWeight = 'var(--font-weight-medium)';
-        message.style.lineHeight = 'var(--line-height-body)';
-        message.style.color = 'var(--text-secondary)';
-        message.style.margin = '0';
-        message.textContent = 'Пожалуйста, зайдите со смартфона';
+        const circle2 = document.createElement('div');
+        circle2.style.cssText = `
+            position: absolute;
+            width: 206px;
+            height: 206px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.04);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        `;
         
-        // Собираем элементы
-        modal.appendChild(icon);
-        modal.appendChild(message);
-        overlay.appendChild(modal);
-        document.body.appendChild(overlay);
+        // Центральный круг с телефоном
+        const phoneCircle = document.createElement('div');
+        phoneCircle.style.cssText = `
+            position: absolute;
+            width: 124px;
+            height: 124px;
+            border-radius: 50%;
+            background: #FFFFFF;
+            box-shadow: 0px 4px 16px rgba(0, 0, 0, 0.08);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        `;
+        
+        // Изображение руки с телефоном
+        const phoneImage = document.createElement('img');
+        phoneImage.src = '/static/assets/a08468ad-cb99-4bc0-ac74-032e960822eb.png';
+        phoneImage.alt = 'Телефон в руке';
+        phoneImage.style.cssText = `
+            width: 172%;
+            height: 172%;
+            object-fit: cover;
+            position: absolute;
+            top: -36%;
+            left: -36%;
+        `;
+        phoneCircle.appendChild(phoneImage);
+        
+        // Иконка местоположения
+        const locationIcon = document.createElement('img');
+        locationIcon.src = '/static/assets/59d0be2e-c9df-4a72-9eb1-666a3942a03d.svg';
+        locationIcon.alt = 'Местоположение';
+        locationIcon.style.cssText = `
+            position: absolute;
+            width: 17.4px;
+            height: 17.4px;
+            top: 35%;
+            left: 48%;
+            transform: translate(-50%, -50%) rotate(135deg);
+            z-index: 10;
+        `;
+        phoneCircle.appendChild(locationIcon);
+        
+        illustrationContainer.appendChild(circle1);
+        illustrationContainer.appendChild(circle2);
+        illustrationContainer.appendChild(phoneCircle);
+        
+        // Контейнер для текста
+        const textContainer = document.createElement('div');
+        textContainer.style.cssText = `
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            align-items: center;
+            text-align: center;
+            max-width: 343px;
+        `;
+        
+        // Заголовок
+        const title = document.createElement('h1');
+        title.style.cssText = `
+            font-family: var(--font-family);
+            font-size: 26px;
+            font-weight: var(--font-weight-semibold);
+            line-height: 1.2;
+            color: var(--text-primary);
+            margin: 0;
+        `;
+        title.textContent = 'Пожалуйста, зайдите со смартфона';
+        
+        // Описание
+        const description = document.createElement('p');
+        description.style.cssText = `
+            font-family: var(--font-family);
+            font-size: var(--font-size-body-l);
+            font-weight: var(--font-weight-medium);
+            line-height: var(--line-height-body);
+            color: var(--text-primary);
+            margin: 0;
+        `;
+        description.textContent = 'Для дальнейшего использования миниаппа, вам необходимо переключиться на другое устройство';
+        
+        textContainer.appendChild(title);
+        textContainer.appendChild(description);
+        
+        fullscreenContainer.appendChild(illustrationContainer);
+        fullscreenContainer.appendChild(textContainer);
+        document.body.appendChild(fullscreenContainer);
         
         // Блокируем прокрутку
         document.body.style.overflow = 'hidden';
