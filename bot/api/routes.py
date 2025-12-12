@@ -3,7 +3,7 @@ import json
 import logging
 from datetime import datetime, date, timedelta
 from aiohttp import web
-from bot.config import is_admin, YANDEX_MAPS_API_KEY
+from bot.config import is_admin, YANDEX_MAPS_API_KEY, ALLOW_ADMIN_DESKTOP
 from bot.services.user_service import UserService
 from bot.services.record_service import RecordService
 from bot.services.report_generator import generate_discipline_report
@@ -90,7 +90,8 @@ async def auth_user(request: web.Request) -> web.Response:
     
     response_data = {
         'is_admin': is_user_admin,
-        'user': user.to_dict() if user else None
+        'user': user.to_dict() if user else None,
+        'allow_admin_desktop': ALLOW_ADMIN_DESKTOP
     }
     
     logger.info(f"User authenticated: {telegram_id} (admin: {is_user_admin})")

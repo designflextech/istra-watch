@@ -73,12 +73,35 @@ class App {
                 return;
             }
             
+            // Проверяем платформу (до аутентификации, чтобы сразу блокировать)
+            const platform = window.Telegram?.WebApp?.platform || 'unknown';
+            console.log('Telegram platform:', platform);
+            debugLog('Platform check', { platform });
+            
+            const isMobilePlatform = platform === 'android' || platform === 'ios';
+            
             // Аутентификация
             console.log('=== Authentication Request ===');
             const data = await API.auth(telegramUser.id);
             
             this.isAdmin = data.is_admin;
             this.currentUser = data.user;
+            const allowAdminDesktop = data.allow_admin_desktop || false;
+            
+            // Блокируем доступ с десктопа для не-админов или админов (если настройка отключена)
+            if (!isMobilePlatform) {
+                const shouldBlock = !this.isAdmin || (this.isAdmin && !allowAdminDesktop);
+                
+                if (shouldBlock) {
+                    console.log('Blocking desktop access:', { 
+                        isAdmin: this.isAdmin, 
+                        allowAdminDesktop,
+                        platform 
+                    });
+                    this.showMobileOnlyMessage();
+                    return;
+                }
+            }
             
             console.log('=== Authentication Success ===');
             console.log('isAdmin:', this.isAdmin);
@@ -254,6 +277,46 @@ class App {
     async showReports() {
         await showReports();
         this.updateNavigation('reports');
+    }
+    
+    /**
+     * Показать сообщение о необходимости использования смартфона
+     */
+    showMobileOnlyMessage() {
+        // Создаем overlay с использованием существующих стилей приложения
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        overlay.style.zIndex = '10000'; // Поверх всего
+        
+        // Создаем модальное окно с использованием существующих стилей
+        const modal = document.createElement('div');
+        modal.className = 'modal-content';
+        modal.style.textAlign = 'center';
+        modal.style.maxWidth = '343px';
+        
+        // Иконка смартфона
+        const icon = document.createElement('div');
+        icon.style.fontSize = '64px';
+        icon.style.marginBottom = 'var(--space-16)';
+        icon.textContent = '📱';
+        
+        // Сообщение
+        const message = document.createElement('p');
+        message.style.fontSize = 'var(--font-size-body-l)';
+        message.style.fontWeight = 'var(--font-weight-medium)';
+        message.style.lineHeight = 'var(--line-height-body)';
+        message.style.color = 'var(--text-secondary)';
+        message.style.margin = '0';
+        message.textContent = 'Пожалуйста, зайдите со смартфона';
+        
+        // Собираем элементы
+        modal.appendChild(icon);
+        modal.appendChild(message);
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        
+        // Блокируем прокрутку
+        document.body.style.overflow = 'hidden';
     }
 }
 

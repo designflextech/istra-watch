@@ -32,6 +32,9 @@ MINI_APP_URL = os.getenv('MINI_APP_URL')
 WORK_START_HOUR = int(os.getenv('WORK_START_HOUR', 9))
 WORK_END_HOUR = int(os.getenv('WORK_END_HOUR', 18))
 
+# Platform Access Configuration
+ALLOW_ADMIN_DESKTOP = os.getenv('ALLOW_ADMIN_DESKTOP', 'false').lower() == 'true'
+
 # S3 Configuration (TWC Storage)
 S3_ENDPOINT_URL = os.getenv('S3_ENDPOINT_URL', 'https://s3.twcstorage.ru')
 S3_REGION = os.getenv('S3_REGION', 'ru-1')
