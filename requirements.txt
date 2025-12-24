@@ -8,4 +8,6 @@ boto3==1.40.50
 Pillow==11.3.0
 pillow-heif==1.1.1
 weasyprint==62.3
+cairocffi==1.7.1
+pydyf==0.11.0
 

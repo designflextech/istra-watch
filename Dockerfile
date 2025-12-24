@@ -7,7 +7,9 @@ RUN apt-get update && apt-get install -y \
     fonts-dejavu-core \
     fonts-dejavu-extra \
     fonts-noto-color-emoji \
+    libcairo2 \
     libpango-1.0-0 \
+    libpangocairo-1.0-0 \
     libpangoft2-1.0-0 \
     libgdk-pixbuf-2.0-0 \
     libffi-dev \
