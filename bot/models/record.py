@@ -3,6 +3,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime, date
 from bot.utils.database import get_db_connection, get_db_cursor, set_search_path, qualified_table_name
 from bot.utils.timezone import now_msk, today_msk, msk_date_range_utc
+from bot.config import TELEGRAM_ADMIN_IDS
 
 
 class Record:
@@ -608,6 +609,13 @@ class Record:
                 records_table = qualified_table_name('records')
                 addresses_table = qualified_table_name('addresses')
                 
+                # Формируем условие фильтрации админов
+                admin_filter = ""
+                if TELEGRAM_ADMIN_IDS:
+                    # Исключаем пользователей с telegram_id из списка админов
+                    admin_ids_str = ','.join(map(str, TELEGRAM_ADMIN_IDS))
+                    admin_filter = f"WHERE (u.telegram_id IS NULL OR u.telegram_id NOT IN ({admin_ids_str}))"
+                
                 cursor.execute(
                     f"""
                     SELECT 
@@ -655,6 +663,7 @@ class Record:
                         LIMIT 1
                     ) dep ON true
                     LEFT JOIN {addresses_table} dep_addr ON dep.address_id = dep_addr.id
+                    {admin_filter}
                     ORDER BY u.name
                     """,
                     (start_utc, end_utc, start_utc, end_utc)

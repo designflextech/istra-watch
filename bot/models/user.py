@@ -97,21 +97,22 @@ class User:
     @staticmethod
     def get_by_telegram_handle(telegram_handle: str) -> Optional['User']:
         """Получение пользователя по Telegram handle"""
-        # Нормализуем handle: добавляем префикс '@' при отсутствии и игнорируем регистр
+        # Ищем по handle игнорируя регистр и наличие символа @
+        # Работает для всех вариантов: deechkin, Deechkin, @deechkin, @Deechkin и т.д.
         if not telegram_handle:
             return None
         handle = telegram_handle.strip()
         if not handle:
             return None
-        if not handle.startswith('@'):
-            handle = f"@{handle}"
 
         with get_db_connection() as conn:
             with get_db_cursor(conn) as cursor:
                 set_search_path(cursor)
                 users_table = qualified_table_name('users')
+                # Убираем @ из обеих сторон и сравниваем в нижнем регистре
+                # LTRIM убирает @ слева, LOWER приводит к нижнему регистру
                 cursor.execute(
-                    f"SELECT * FROM {users_table} WHERE LOWER(telegram_handle) = LOWER(%s)",
+                    f"SELECT * FROM {users_table} WHERE LOWER(LTRIM(telegram_handle, '@')) = LOWER(LTRIM(%s, '@'))",
                     (handle,)
                 )
                 result = cursor.fetchone()
