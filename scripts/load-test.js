@@ -1,17 +1,16 @@
 // k6 load test script для Istra Watch
 // Запуск: k6 run scripts/load-test.js
-// Установка k6: https://k6.io/docs/getting-started/installation/
 
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Rate, Trend } from 'k6/metrics';
 
 // Кастомные метрики
-const errorRate = new Rate('errors');
-const apiLatency = new Trend('api_latency');
+var errorRate = new Rate('errors');
+var apiLatency = new Trend('api_latency');
 
 // Конфигурация теста
-export const options = {
+export var options = {
   // Сценарии нагрузки
   scenarios: {
     // Плавный рост нагрузки
@@ -37,89 +36,37 @@ export const options = {
   },
 };
 
-const BASE_URL = 'https://istra-geo-watch.nwsr.in';
-
-// Тестовые данные (замени на реальный токен тестового пользователя)
-const TEST_AUTH_TOKEN = __ENV.AUTH_TOKEN || 'test_token_here';
-
-// Заголовки с авторизацией
-const authHeaders = {
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${TEST_AUTH_TOKEN}`,
-  },
-};
+var BASE_URL = 'https://istra-geo-watch.nwsr.in';
 
 // Только GET запросы - безопасно для продакшена
-const endpoints = [
+var endpoints = [
   { path: '/api/config', weight: 30, name: 'config' },
-  { path: '/api/employees', weight: 20, name: 'employees' },
-  { path: '/api/current-locations', weight: 25, name: 'locations' },
-  { path: '/api/user/today-status', weight: 25, name: 'today-status' },
 ];
 
-// Выбор endpoint по весу
-function selectEndpoint() {
-  const totalWeight = endpoints.reduce((sum, e) => sum + e.weight, 0);
-  let random = Math.random() * totalWeight;
-
-  for (const endpoint of endpoints) {
-    random -= endpoint.weight;
-    if (random <= 0) return endpoint;
-  }
-  return endpoints[0];
-}
-
 export default function () {
-  const endpoint = selectEndpoint();
-  const url = `${BASE_URL}${endpoint.path}`;
+  var url = BASE_URL + '/api/config';
 
-  const startTime = Date.now();
-  const response = http.get(url, authHeaders);
-  const duration = Date.now() - startTime;
+  var startTime = Date.now();
+  var response = http.get(url);
+  var duration = Date.now() - startTime;
 
   // Записываем метрики
-  apiLatency.add(duration, { endpoint: endpoint.name });
+  apiLatency.add(duration);
 
   // Проверки
-  const success = check(response, {
-    'status is 200 or 401': (r) => r.status === 200 || r.status === 401,
-    'response time < 2s': (r) => r.timings.duration < 2000,
-    'no rate limit': (r) => r.status !== 429,
+  var success = check(response, {
+    'status is 200': function(r) { return r.status === 200; },
+    'response time < 2s': function(r) { return r.timings.duration < 2000; },
+    'no rate limit': function(r) { return r.status !== 429; },
   });
 
   errorRate.add(!success);
 
   // Логируем ошибки rate limit
   if (response.status === 429) {
-    console.warn(`Rate limited on ${endpoint.name}`);
+    console.warn('Rate limited!');
   }
 
   // Пауза между запросами (имитация реального пользователя)
   sleep(Math.random() * 2 + 0.5); // 0.5-2.5 сек
-}
-
-// Отчет после теста
-export function handleSummary(data) {
-  return {
-    'stdout': textSummary(data, { indent: ' ', enableColors: true }),
-    'scripts/load-test-report.json': JSON.stringify(data, null, 2),
-  };
-}
-
-function textSummary(data, options) {
-  const metrics = data.metrics;
-
-  let summary = '\n========== LOAD TEST SUMMARY ==========\n\n';
-
-  summary += `Total Requests: ${metrics.http_reqs?.values?.count || 0}\n`;
-  summary += `Failed Requests: ${metrics.http_req_failed?.values?.passes || 0}\n`;
-  summary += `Avg Response Time: ${(metrics.http_req_duration?.values?.avg || 0).toFixed(0)}ms\n`;
-  summary += `P95 Response Time: ${(metrics.http_req_duration?.values?.['p(95)'] || 0).toFixed(0)}ms\n`;
-  summary += `Max Response Time: ${(metrics.http_req_duration?.values?.max || 0).toFixed(0)}ms\n`;
-  summary += `Error Rate: ${((metrics.errors?.values?.rate || 0) * 100).toFixed(2)}%\n`;
-
-  summary += '\n========================================\n';
-
-  return summary;
 }

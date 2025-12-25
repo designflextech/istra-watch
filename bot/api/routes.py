@@ -741,10 +741,27 @@ async def generate_report(request: web.Request) -> web.Response:
         )
 
 
+async def load_test_db(request: web.Request) -> web.Response:
+    """
+    Тестовый endpoint для нагрузочного тестирования с запросом к БД.
+    Только для тестирования! Удалить после теста.
+    """
+    import os
+    if os.getenv('DISABLE_RATE_LIMIT', 'false').lower() != 'true':
+        return web.json_response({'error': 'Load testing disabled'}, status=403)
+
+    # Реальный запрос к БД - получаем всех пользователей
+    users = User.get_all()
+    return web.json_response({
+        'users_count': len(users),
+        'timestamp': datetime.now().isoformat()
+    })
+
+
 def setup_routes(app: web.Application):
     """
     Настройка маршрутов API
-    
+
     Args:
         app: Приложение aiohttp
     """
@@ -759,4 +776,6 @@ def setup_routes(app: web.Application):
     app.router.add_get('/api/current-locations', get_current_locations)
     app.router.add_get('/api/user/today-status', get_user_today_status)
     app.router.add_get('/api/reports/discipline', generate_report)
+    # Load testing endpoint (удалить после теста!)
+    app.router.add_get('/api/load-test-db', load_test_db)
 

@@ -214,7 +214,7 @@ async def telegram_auth_middleware(request: web.Request, handler):
         return await handler(request)
     
     # Пропускаем публичные endpoints, которые не требуют аутентификации
-    public_endpoints = ['/api/config']
+    public_endpoints = ['/api/config', '/api/load-test-db']
     if request.path in public_endpoints:
         return await handler(request)
     

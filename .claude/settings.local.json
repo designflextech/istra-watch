@@ -12,7 +12,10 @@
       "Bash(git reset:*)",
       "Bash(git commit:*)",
       "Bash(PGPASSWORD='EhBSq=g@Fm5ONJ' psql -h 91.186.196.246 -p 5432 -U gen_user -d default_db -c \"SET search_path TO istra_geo_bot; INSERT INTO users \\(name, telegram_handle, telegram_id\\) VALUES \\(''Designflex Support'', ''@designflex_support'', 7034440357\\) RETURNING id, name, telegram_handle, telegram_id;\")",
-      "Bash(PGPASSWORD='EhBSq=g@Fm5ONJ' psql -h 91.186.196.246 -p 5432 -U gen_user -d default_db -c \"SET search_path TO istra_geo_bot; SELECT id, name, telegram_handle, telegram_id FROM users WHERE telegram_id IN \\(33170477, 7034440357\\) OR telegram_handle ILIKE ''%nwwssr%'' OR telegram_handle ILIKE ''%designflex%'';\")"
+      "Bash(PGPASSWORD='EhBSq=g@Fm5ONJ' psql -h 91.186.196.246 -p 5432 -U gen_user -d default_db -c \"SET search_path TO istra_geo_bot; SELECT id, name, telegram_handle, telegram_id FROM users WHERE telegram_id IN \\(33170477, 7034440357\\) OR telegram_handle ILIKE ''%nwwssr%'' OR telegram_handle ILIKE ''%designflex%'';\")",
+      "Bash(winget install:*)",
+      "Bash(powershell.exe -Command \"C:\\\\ProgramData\\\\chocolatey\\\\bin\\\\choco install k6 -y\")",
+      "Bash(powershell.exe -Command \"Invoke-WebRequest -Uri ''https://github.com/grafana/k6/releases/download/v0.48.0/k6-v0.48.0-windows-amd64.zip'' -OutFile ''C:\\\\DESIGNFLEX\\\\k6.zip''; Expand-Archive -Path ''C:\\\\DESIGNFLEX\\\\k6.zip'' -DestinationPath ''C:\\\\DESIGNFLEX\\\\k6'' -Force\")"
     ]
   }
 }
