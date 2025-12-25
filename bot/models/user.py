@@ -165,3 +165,113 @@ class User:
                 cursor.execute(f"DELETE FROM {users_table} WHERE id = %s", (user_id,))
                 return cursor.rowcount > 0
 
+    @staticmethod
+    def get_all_as_dict() -> Dict[str, 'User']:
+        """
+        Получение всех пользователей как словарь {telegram_handle: User}
+        Оптимизировано для быстрого поиска по handle
+        """
+        with get_db_connection() as conn:
+            with get_db_cursor(conn) as cursor:
+                set_search_path(cursor)
+                users_table = qualified_table_name('users')
+                cursor.execute(f"SELECT * FROM {users_table}")
+                results = cursor.fetchall()
+                users_dict = {}
+                for row in results:
+                    user = User.from_dict(dict(row))
+                    if user.telegram_handle:
+                        # Нормализуем handle для ключа
+                        normalized = user.telegram_handle.lower().lstrip('@')
+                        users_dict[normalized] = user
+                return users_dict
+
+    @staticmethod
+    def get_all_names_lowercase() -> set:
+        """
+        Получение множества всех имен пользователей в нижнем регистре
+        Оптимизировано для быстрой проверки дубликатов
+        """
+        with get_db_connection() as conn:
+            with get_db_cursor(conn) as cursor:
+                set_search_path(cursor)
+                users_table = qualified_table_name('users')
+                cursor.execute(f"SELECT LOWER(name) as name FROM {users_table}")
+                results = cursor.fetchall()
+                return {row['name'] for row in results if row['name']}
+
+    @staticmethod
+    def batch_create(users_data: List[Dict[str, Any]]) -> int:
+        """
+        Batch создание пользователей (один INSERT для всех)
+
+        Args:
+            users_data: Список словарей с данными пользователей
+                       [{name, telegram_handle, email?, telegram_id?, phone?, avatar_url?}, ...]
+
+        Returns:
+            Количество созданных пользователей
+        """
+        if not users_data:
+            return 0
+
+        with get_db_connection() as conn:
+            with get_db_cursor(conn) as cursor:
+                set_search_path(cursor)
+                users_table = qualified_table_name('users')
+
+                # Подготовка данных для batch insert
+                values = []
+                params = []
+                for user in users_data:
+                    values.append("(%s, %s, %s, %s, %s, %s)")
+                    params.extend([
+                        user.get('name'),
+                        user.get('telegram_handle'),
+                        user.get('email'),
+                        user.get('telegram_id'),
+                        user.get('phone'),
+                        user.get('avatar_url')
+                    ])
+
+                query = f"""
+                    INSERT INTO {users_table} (name, telegram_handle, email, telegram_id, phone, avatar_url)
+                    VALUES {', '.join(values)}
+                    ON CONFLICT (telegram_handle) DO NOTHING
+                """
+                cursor.execute(query, params)
+                return cursor.rowcount
+
+    @staticmethod
+    def batch_update_names(updates: List[Dict[str, Any]]) -> int:
+        """
+        Batch обновление имен пользователей
+
+        Args:
+            updates: Список [{id, name}, ...]
+
+        Returns:
+            Количество обновленных пользователей
+        """
+        if not updates:
+            return 0
+
+        with get_db_connection() as conn:
+            with get_db_cursor(conn) as cursor:
+                set_search_path(cursor)
+                users_table = qualified_table_name('users')
+
+                # Используем CASE для batch update
+                ids = [u['id'] for u in updates]
+                cases = " ".join([f"WHEN id = {u['id']} THEN %s" for u in updates])
+                names = [u['name'] for u in updates]
+
+                query = f"""
+                    UPDATE {users_table}
+                    SET name = CASE {cases} END,
+                        updated_at = NOW()
+                    WHERE id = ANY(%s)
+                """
+                cursor.execute(query, names + [ids])
+                return cursor.rowcount
+

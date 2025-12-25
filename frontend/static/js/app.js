@@ -67,9 +67,9 @@ class App {
                 const errorDetails = [];
                 if (!telegramUser) errorDetails.push('Отсутствуют данные пользователя Telegram');
                 if (!telegramSDK.initDataRaw) errorDetails.push('Отсутствует initDataRaw');
-                
+
                 console.error('Initialization failed:', errorDetails);
-                showError('Ошибка получения данных пользователя.<br><br>Детали:<br>' + errorDetails.join('<br>') + '<br><br>Приложение должно быть открыто в Telegram.');
+                this.showTelegramErrorMessage();
                 return;
             }
             
@@ -431,6 +431,178 @@ class App {
         document.body.appendChild(fullscreenContainer);
         
         // Блокируем прокрутку
+        document.body.style.overflow = 'hidden';
+    }
+
+    /**
+     * Показать сообщение об ошибке открытия вне Telegram
+     */
+    showTelegramErrorMessage() {
+        // Создаем полноэкранный контейнер
+        const fullscreenContainer = document.createElement('div');
+        fullscreenContainer.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.02) 100%), #FFFFFF;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 60px 24px 24px;
+            overflow-y: auto;
+        `;
+
+        // Иконка ошибки
+        const iconContainer = document.createElement('div');
+        iconContainer.style.cssText = `
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(234, 67, 53, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            flex-shrink: 0;
+        `;
+        iconContainer.innerHTML = `
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 9V13M12 17H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="#EA4335" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        `;
+
+        // Заголовок
+        const title = document.createElement('h1');
+        title.style.cssText = `
+            font-family: var(--font-family);
+            font-size: 22px;
+            font-weight: var(--font-weight-semibold);
+            line-height: 1.3;
+            color: var(--text-primary);
+            margin: 0 0 12px 0;
+            text-align: center;
+        `;
+        title.textContent = 'Не удалось открыть приложение';
+
+        // Подзаголовок
+        const subtitle = document.createElement('p');
+        subtitle.style.cssText = `
+            font-family: var(--font-family);
+            font-size: 15px;
+            font-weight: var(--font-weight-regular);
+            line-height: 1.5;
+            color: var(--text-secondary);
+            margin: 0 0 32px 0;
+            text-align: center;
+        `;
+        subtitle.textContent = 'Приложение должно быть открыто через Telegram. Попробуйте следующее:';
+
+        // Контейнер для шагов
+        const stepsContainer = document.createElement('div');
+        stepsContainer.style.cssText = `
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            width: 100%;
+            max-width: 400px;
+        `;
+
+        const steps = [
+            {
+                number: '1',
+                title: 'Откройте через бота',
+                description: 'Зайдите в чат с ботом и нажмите кнопку "Меню" или отправьте команду /start'
+            },
+            {
+                number: '2',
+                title: 'Обновите Telegram',
+                description: 'Убедитесь, что у вас установлена последняя версия приложения'
+            },
+            {
+                number: '3',
+                title: 'Перезапустите Telegram',
+                description: 'Полностью закройте приложение и откройте заново'
+            },
+            {
+                number: '4',
+                title: 'Очистите кэш',
+                description: 'Telegram → Настройки → Данные и память → Использование памяти → Очистить кэш'
+            }
+        ];
+
+        steps.forEach(step => {
+            const stepElement = document.createElement('div');
+            stepElement.style.cssText = `
+                display: flex;
+                gap: 16px;
+                padding: 16px;
+                background: rgba(0, 0, 0, 0.02);
+                border-radius: 12px;
+                align-items: flex-start;
+            `;
+
+            const numberCircle = document.createElement('div');
+            numberCircle.style.cssText = `
+                width: 28px;
+                height: 28px;
+                min-width: 28px;
+                border-radius: 50%;
+                background: var(--text-primary);
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-family: var(--font-family);
+                font-size: 14px;
+                font-weight: var(--font-weight-semibold);
+            `;
+            numberCircle.textContent = step.number;
+
+            const textContainer = document.createElement('div');
+            textContainer.style.cssText = `
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+            `;
+
+            const stepTitle = document.createElement('div');
+            stepTitle.style.cssText = `
+                font-family: var(--font-family);
+                font-size: 15px;
+                font-weight: var(--font-weight-semibold);
+                color: var(--text-primary);
+                line-height: 1.3;
+            `;
+            stepTitle.textContent = step.title;
+
+            const stepDescription = document.createElement('div');
+            stepDescription.style.cssText = `
+                font-family: var(--font-family);
+                font-size: 13px;
+                font-weight: var(--font-weight-regular);
+                color: var(--text-secondary);
+                line-height: 1.4;
+            `;
+            stepDescription.textContent = step.description;
+
+            textContainer.appendChild(stepTitle);
+            textContainer.appendChild(stepDescription);
+            stepElement.appendChild(numberCircle);
+            stepElement.appendChild(textContainer);
+            stepsContainer.appendChild(stepElement);
+        });
+
+        fullscreenContainer.appendChild(iconContainer);
+        fullscreenContainer.appendChild(title);
+        fullscreenContainer.appendChild(subtitle);
+        fullscreenContainer.appendChild(stepsContainer);
+        document.body.appendChild(fullscreenContainer);
+
+        // Блокируем прокрутку основного контента
         document.body.style.overflow = 'hidden';
     }
 }

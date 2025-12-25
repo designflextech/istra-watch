@@ -1,4 +1,6 @@
 """Сервис для работы с записями о приходах/уходах"""
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from typing import List, Optional, Dict, Any
 from datetime import datetime, date
 from bot.models.record import Record
@@ -10,6 +12,9 @@ from bot.utils.timezone import now_msk
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Executor для блокирующих операций с изображениями (PIL)
+_image_executor = ThreadPoolExecutor(max_workers=5)
 
 
 class RecordService:
@@ -150,14 +155,19 @@ class RecordService:
         if record.user_id != user_id:
             raise ValueError('Недостаточно прав для загрузки фото к этой записи')
         
-        # Валидация изображения
+        # Валидация изображения (быстрая операция, можно оставить синхронной)
         is_valid, error_message = ImageProcessor.validate_image(photo_data)
         if not is_valid:
             raise ValueError(error_message)
-        
-        # Обработка изображения (сжатие, сохранение EXIF)
-        processed_data, metadata = ImageProcessor.process_image(photo_data)
-        
+
+        # Обработка изображения в отдельном потоке (PIL блокирующий)
+        loop = asyncio.get_event_loop()
+        processed_data, metadata = await loop.run_in_executor(
+            _image_executor,
+            ImageProcessor.process_image,
+            photo_data
+        )
+
         logger.info(f"Image processed for record {record_id}: {metadata}")
         
         # Загрузка в S3

@@ -132,8 +132,9 @@ async def on_startup(app: web.Application):
         app: Приложение aiohttp
     """
     # Инициализируем пул соединений с БД
+    # Увеличен maxconn для поддержки 50-200 пользователей
     logger.info("Initializing database connection pool...")
-    init_connection_pool(minconn=2, maxconn=20)
+    init_connection_pool(minconn=5, maxconn=50)
     
     # Автоматически применяем миграции при запуске
     # Это обеспечивает автоматическую инициализацию БД:

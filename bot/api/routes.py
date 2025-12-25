@@ -1,6 +1,8 @@
 """API маршруты"""
 import json
 import logging
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, date, timedelta
 from aiohttp import web
 from bot.config import is_admin, YANDEX_MAPS_API_KEY, ALLOW_ADMIN_DESKTOP
@@ -12,6 +14,54 @@ from bot.models.user import User
 from bot.utils.timezone import today_msk
 
 logger = logging.getLogger(__name__)
+
+# ThreadPoolExecutor для блокирующих операций (PDF, синхронные DB вызовы)
+# max_workers=10 - достаточно для 50-200 пользователей
+_executor = ThreadPoolExecutor(max_workers=10)
+
+# TTL кэш для get_employees_status
+# Формат: {date_str: (data, timestamp)}
+_employees_cache: dict = {}
+_CACHE_TTL = 60  # 60 секунд - данные меняются при создании записей
+
+
+def _get_cached_employees(target_date) -> list:
+    """Получение данных сотрудников с кэшированием"""
+    import time
+    cache_key = target_date.isoformat()
+
+    # Проверяем кэш
+    if cache_key in _employees_cache:
+        data, timestamp = _employees_cache[cache_key]
+        if time.time() - timestamp < _CACHE_TTL:
+            logger.debug(f"Cache hit for employees status on {cache_key}")
+            return data
+
+    # Запрос к БД
+    logger.debug(f"Cache miss for employees status on {cache_key}, fetching from DB")
+    data = RecordService.get_records_by_date(target_date)
+
+    # Сохраняем в кэш
+    _employees_cache[cache_key] = (data, time.time())
+
+    # Очищаем старые записи кэша (держим только последние 7 дней)
+    if len(_employees_cache) > 7:
+        oldest_key = min(_employees_cache.keys(), key=lambda k: _employees_cache[k][1])
+        del _employees_cache[oldest_key]
+
+    return data
+
+
+def invalidate_employees_cache(target_date=None):
+    """Инвалидация кэша (вызывается при создании записи)"""
+    if target_date:
+        cache_key = target_date.isoformat()
+        if cache_key in _employees_cache:
+            del _employees_cache[cache_key]
+            logger.debug(f"Cache invalidated for {cache_key}")
+    else:
+        _employees_cache.clear()
+        logger.debug("All employees cache invalidated")
 
 
 async def auth_user(request: web.Request) -> web.Response:
@@ -124,9 +174,9 @@ async def get_employees_status(request: web.Request) -> web.Response:
     if target_date < one_month_ago:
         raise ValueError('Дата не может быть старше 1 месяца')
     
-    # Получаем записи за дату
-    records_data = RecordService.get_records_by_date(target_date)
-    
+    # Получаем записи за дату (с кэшированием)
+    records_data = _get_cached_employees(target_date)
+
     return web.json_response({
         'date': target_date.isoformat(),
         'employees': records_data
@@ -220,7 +270,10 @@ async def create_record(request: web.Request) -> web.Response:
         longitude=float(longitude),
         comment=comment
     )
-    
+
+    # Инвалидируем кэш для сегодняшней даты
+    invalidate_employees_cache(today_msk())
+
     logger.info(f"Record created: user_id={user_id}, type={record_type}, id={record.id}")
     
     return web.json_response({
@@ -635,9 +688,21 @@ async def generate_report(request: web.Request) -> web.Response:
         )
     
     try:
-        # Генерация отчета
+        # Генерация отчета в отдельном потоке чтобы не блокировать event loop
         logger.info(f"Generating report for period {date_from} - {date_to} by admin {telegram_id}")
-        pdf_buffer = generate_discipline_report(date_from, date_to)
+        loop = asyncio.get_event_loop()
+        try:
+            # Таймаут 120 секунд для генерации отчета
+            pdf_buffer = await asyncio.wait_for(
+                loop.run_in_executor(_executor, generate_discipline_report, date_from, date_to),
+                timeout=120.0
+            )
+        except asyncio.TimeoutError:
+            logger.error(f"Report generation timeout for period {date_from} - {date_to}")
+            return web.json_response(
+                {'error': 'Генерация отчета заняла слишком много времени. Попробуйте уменьшить период.'},
+                status=504
+            )
         
         # Формирование имени файла
         filename = f"Отчёт_о_дисциплине_сотрудников_за_{date_from.strftime('%d.%m.%Y')}__{date_to.strftime('%d.%m.%Y')}.pdf"

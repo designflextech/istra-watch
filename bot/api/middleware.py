@@ -1,4 +1,5 @@
 """Middleware для API"""
+import asyncio
 import logging
 import time
 from collections import defaultdict
@@ -10,80 +11,108 @@ logger = logging.getLogger(__name__)
 
 
 # Хранилище для rate limiting (в памяти)
-# Формат: {ip: [(timestamp, count), ...]}
+# Формат: {ip: [timestamp, ...]}
 _rate_limit_storage: Dict[str, list] = defaultdict(list)
+
+# asyncio.Lock для потокобезопасного доступа к _rate_limit_storage
+_rate_limit_lock = asyncio.Lock()
+
+# Веса endpoints для дифференцированного rate limiting
+# Дорогие операции "стоят" больше запросов
+ENDPOINT_COSTS = {
+    '/api/config': 1,               # Легкий endpoint
+    '/api/auth': 2,                 # Аутентификация
+    '/api/employees': 5,            # Список сотрудников (запрос к БД)
+    '/api/current-locations': 5,    # Текущие локации
+    '/api/user/today-status': 3,    # Статус пользователя
+    '/api/address': 10,             # Запрос к Yandex API
+    '/api/records': 10,             # Создание записи
+    '/api/reports/discipline': 50,  # Генерация PDF отчета (дорогая операция)
+}
+DEFAULT_COST = 3  # Стоимость по умолчанию
 
 
 class RateLimiter:
-    """Rate limiter для ограничения запросов"""
-    
+    """Rate limiter для ограничения запросов с поддержкой весов endpoints"""
+
     def __init__(self, max_requests: int = 100, window_seconds: int = 60):
         """
         Args:
-            max_requests: Максимум запросов в окне
+            max_requests: Максимум "единиц стоимости" в окне
             window_seconds: Размер окна в секундах
         """
         self.max_requests = max_requests
         self.window_seconds = window_seconds
-    
-    def is_allowed(self, identifier: str) -> Tuple[bool, int]:
+
+    async def is_allowed(self, identifier: str, cost: int = 1) -> Tuple[bool, int]:
         """
-        Проверка, разрешен ли запрос
-        
+        Проверка, разрешен ли запрос (потокобезопасная версия)
+
         Args:
             identifier: Идентификатор (обычно IP адрес)
-            
+            cost: Стоимость запроса в единицах
+
         Returns:
-            Tuple[bool, int]: (разрешен ли запрос, оставшееся количество запросов)
+            Tuple[bool, int]: (разрешен ли запрос, оставшееся количество единиц)
         """
-        now = time.time()
-        window_start = now - self.window_seconds
-        
-        # Очищаем старые записи
-        _rate_limit_storage[identifier] = [
-            ts for ts in _rate_limit_storage[identifier]
-            if ts > window_start
-        ]
-        
-        # Проверяем лимит
-        current_count = len(_rate_limit_storage[identifier])
-        
-        if current_count >= self.max_requests:
-            return False, 0
-        
-        # Добавляем текущий запрос
-        _rate_limit_storage[identifier].append(now)
-        
-        remaining = self.max_requests - current_count - 1
-        return True, remaining
+        async with _rate_limit_lock:
+            now = time.time()
+            window_start = now - self.window_seconds
+
+            # Очищаем старые записи
+            _rate_limit_storage[identifier] = [
+                (ts, c) for ts, c in _rate_limit_storage[identifier]
+                if ts > window_start
+            ]
+
+            # Считаем текущую стоимость
+            current_cost = sum(c for _, c in _rate_limit_storage[identifier])
+
+            if current_cost + cost > self.max_requests:
+                return False, 0
+
+            # Добавляем текущий запрос с его стоимостью
+            _rate_limit_storage[identifier].append((now, cost))
+
+            remaining = self.max_requests - current_cost - cost
+            return True, remaining
 
 
-# Глобальный rate limiter
-rate_limiter = RateLimiter(max_requests=100, window_seconds=60)
+# Глобальный rate limiter (увеличен лимит для поддержки весов)
+rate_limiter = RateLimiter(max_requests=200, window_seconds=60)
 
 
 @web.middleware
 async def rate_limit_middleware(request: web.Request, handler):
     """
-    Middleware для ограничения частоты запросов
-    
-    Лимит: 100 запросов в минуту с одного IP
+    Middleware для ограничения частоты запросов с дифференцированными весами
+
+    Лимит: 200 единиц стоимости в минуту с одного IP
+    Дорогие операции (PDF отчеты) стоят больше единиц
     """
     # Пропускаем для не-API роутов
     if not request.path.startswith('/api/'):
         return await handler(request)
-    
+
     # Получаем IP адрес
     ip = request.headers.get('X-Real-IP') or \
          request.headers.get('X-Forwarded-For', '').split(',')[0] or \
          request.remote or \
          'unknown'
-    
-    # Проверяем лимит
-    allowed, remaining = rate_limiter.is_allowed(ip)
-    
+
+    # Определяем стоимость запроса по endpoint
+    # Ищем совпадение по началу пути (для динамических путей типа /api/records/123)
+    cost = DEFAULT_COST
+    for endpoint, endpoint_cost in ENDPOINT_COSTS.items():
+        if request.path.startswith(endpoint):
+            cost = endpoint_cost
+            break
+
+    # Проверяем лимит (async версия с Lock)
+    allowed, remaining = await rate_limiter.is_allowed(ip, cost)
+
     if not allowed:
-        logger.warning(f"Rate limit exceeded for IP: {ip}")
+        logger.warning(f"Rate limit exceeded for IP: {ip}, path: {request.path}, cost: {cost}")
         return web.json_response(
             {
                 'error': 'Rate limit exceeded',
@@ -97,15 +126,15 @@ async def rate_limit_middleware(request: web.Request, handler):
                 'X-RateLimit-Reset': str(int(time.time() + rate_limiter.window_seconds))
             }
         )
-    
+
     # Выполняем запрос
     response = await handler(request)
-    
+
     # Добавляем заголовки о rate limit
     response.headers['X-RateLimit-Limit'] = str(rate_limiter.max_requests)
     response.headers['X-RateLimit-Remaining'] = str(remaining)
     response.headers['X-RateLimit-Reset'] = str(int(time.time() + rate_limiter.window_seconds))
-    
+
     return response
 
 

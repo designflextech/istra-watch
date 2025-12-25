@@ -12,79 +12,92 @@ class UserService:
     def process_excel_file(file_path: str) -> dict:
         """
         Обработка Excel файла с пользователями
-        
+        Оптимизировано: 3 запроса к БД вместо N*3
+
         Args:
             file_path: Путь к файлу
-            
+
         Returns:
             Словарь с результатами обработки
         """
         try:
-            workbook = openpyxl.load_workbook(file_path)
+            workbook = openpyxl.load_workbook(file_path, read_only=True)
             sheet = workbook.active
-            
+
+            # 1. Загружаем всех существующих пользователей ОДИН раз (1 запрос)
+            existing_users = User.get_all_as_dict()  # {normalized_handle: User}
+            existing_names = User.get_all_names_lowercase()  # {lowercase_name}
+
             added = 0
             updated = 0
             skipped = 0
             errors = []
-            
+
+            # Списки для batch операций
+            users_to_create = []
+            users_to_update = []
+
             # Пропускаем заголовок (первую строку)
             for row_idx, row in enumerate(sheet.iter_rows(min_row=2, values_only=True), start=2):
                 try:
                     if not row or len(row) < 2:
                         continue
-                    
+
                     name = str(row[0]).strip() if row[0] else None
                     telegram_handle = str(row[1]).strip() if row[1] else None
-                    
+
                     if not name or not telegram_handle:
                         errors.append(f"Строка {row_idx}: пропущены обязательные поля")
                         continue
-                    
+
                     # Нормализуем handle: добавляем @ если его нет и приводим к нижнему регистру
                     if not telegram_handle.startswith('@'):
                         telegram_handle = f"@{telegram_handle}"
                     telegram_handle = telegram_handle.lower()
-                    
+
+                    # Нормализуем для поиска в словаре (без @)
+                    normalized_handle = telegram_handle.lstrip('@')
+
                     # Проверяем, существует ли пользователь по telegram_handle
-                    existing_user = User.get_by_telegram_handle(telegram_handle)
-                    
+                    existing_user = existing_users.get(normalized_handle)
+
                     if existing_user:
                         # Если пользователь найден, проверяем нужно ли обновить имя
                         if existing_user.name != name:
-                            existing_user.name = name
-                            existing_user.update()
+                            users_to_update.append({'id': existing_user.id, 'name': name})
                             updated += 1
                         else:
                             skipped += 1
                     else:
-                        # Дополнительная проверка: проверяем, нет ли пользователя с таким же именем
-                        # (защита от случайного создания дубликатов)
-                        from bot.utils.database import get_db_connection, get_db_cursor, set_search_path, qualified_table_name
-                        with get_db_connection() as conn:
-                            with get_db_cursor(conn) as cursor:
-                                set_search_path(cursor)
-                                users_table = qualified_table_name('users')
-                                cursor.execute(
-                                    f"SELECT * FROM {users_table} WHERE LOWER(name) = LOWER(%s)",
-                                    (name,)
-                                )
-                                duplicate_name = cursor.fetchone()
-                                if duplicate_name:
-                                    errors.append(f"Строка {row_idx}: пользователь с именем '{name}' уже существует")
-                                    skipped += 1
-                                    continue
-                        
-                        # Создаем нового пользователя (telegram_id будет заполнен при первом входе)
-                        User.create(
-                            name=name,
-                            telegram_handle=telegram_handle
-                        )
+                        # Проверяем дубликат имени в памяти (а не в БД)
+                        if name.lower() in existing_names:
+                            errors.append(f"Строка {row_idx}: пользователь с именем '{name}' уже существует")
+                            skipped += 1
+                            continue
+
+                        # Добавляем в список для batch insert
+                        users_to_create.append({
+                            'name': name,
+                            'telegram_handle': telegram_handle
+                        })
+                        # Добавляем в existing для проверки дубликатов в этом же файле
+                        existing_names.add(name.lower())
+                        existing_users[normalized_handle] = User(name=name, telegram_handle=telegram_handle)
                         added += 1
-                
+
                 except Exception as e:
                     errors.append(f"Строка {row_idx}: {str(e)}")
-            
+
+            # 2. Batch insert новых пользователей (1 запрос)
+            if users_to_create:
+                User.batch_create(users_to_create)
+
+            # 3. Batch update существующих пользователей (1 запрос)
+            if users_to_update:
+                User.batch_update_names(users_to_update)
+
+            workbook.close()
+
             return {
                 'success': True,
                 'added': added,
@@ -92,7 +105,7 @@ class UserService:
                 'skipped': skipped,
                 'errors': errors
             }
-        
+
         except Exception as e:
             return {
                 'success': False,

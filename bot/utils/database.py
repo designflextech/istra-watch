@@ -70,24 +70,44 @@ def get_db_connection() -> Generator:
     
     # Получаем соединение из пула
     conn = _connection_pool.getconn()
-    use_fresh_connection = False
-    
+    connection_valid = True
+
     # Проверяем живость соединения перед использованием
     try:
         with conn.cursor() as test_cursor:
             test_cursor.execute("SELECT 1")
     except (psycopg2.OperationalError, psycopg2.InterfaceError) as e:
-        logger.warning(f"Connection from pool is dead, creating fresh connection: {e}")
-        # Соединение мертво, закрываем его и создаем СВЕЖЕЕ минуя пул
+        logger.warning(f"Connection from pool is dead: {e}")
+        connection_valid = False
+        # Возвращаем мертвое соединение в пул с флагом close=True
+        # Это корректно удалит его из пула
         try:
-            conn.close()
-        except Exception:
-            pass
-        # Создаем новое соединение напрямую (не из пула)
-        conn = psycopg2.connect(DATABASE_URL)
-        use_fresh_connection = True
-        logger.info("Fresh database connection created successfully")
-    
+            _connection_pool.putconn(conn, close=True)
+        except Exception as put_error:
+            logger.warning(f"Failed to return dead connection to pool: {put_error}")
+
+        # Пытаемся получить новое соединение из пула (до 3 попыток)
+        for attempt in range(3):
+            try:
+                conn = _connection_pool.getconn()
+                with conn.cursor() as test_cursor:
+                    test_cursor.execute("SELECT 1")
+                connection_valid = True
+                logger.info(f"Got valid connection from pool on attempt {attempt + 1}")
+                break
+            except (psycopg2.OperationalError, psycopg2.InterfaceError) as retry_error:
+                logger.warning(f"Connection attempt {attempt + 1} failed: {retry_error}")
+                try:
+                    _connection_pool.putconn(conn, close=True)
+                except Exception:
+                    pass
+
+        # Если все попытки из пула неудачны, создаем прямое соединение
+        if not connection_valid:
+            logger.warning("All pool connections dead, creating direct connection")
+            conn = psycopg2.connect(DATABASE_URL)
+            connection_valid = True
+
     try:
         yield conn
         conn.commit()
@@ -100,15 +120,20 @@ def get_db_connection() -> Generator:
             logger.warning(f"Failed to rollback: {rollback_error}")
         raise
     finally:
-        if use_fresh_connection:
-            # Свежее соединение просто закрываем (оно не из пула)
+        # Всегда пытаемся вернуть соединение в пул
+        try:
+            if conn.closed:
+                # Соединение закрыто, ничего не делаем
+                logger.debug("Connection already closed, skipping putconn")
+            else:
+                _connection_pool.putconn(conn)
+        except Exception as put_error:
+            # Если не удалось вернуть в пул, закрываем соединение
+            logger.warning(f"Failed to return connection to pool: {put_error}")
             try:
                 conn.close()
             except Exception:
                 pass
-        else:
-            # Соединение из пула возвращаем обратно
-            _connection_pool.putconn(conn)
 
 
 @contextmanager

@@ -1,10 +1,15 @@
 """Обработчик загрузки Excel файла"""
 import os
+import asyncio
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from telegram import Update, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import ContextTypes
 from bot.config import is_admin
 from bot.services.user_service import UserService
+
+# Executor для блокирующих операций с Excel
+_excel_executor = ThreadPoolExecutor(max_workers=3)
 
 
 # Состояния для ожидания файла
@@ -84,9 +89,14 @@ async def excel_file_handler(update: Update, context: ContextTypes.DEFAULT_TYPE)
             temp_path = temp_file.name
             await file.download_to_drive(temp_path)
         
-        # Обрабатываем файл
-        result = UserService.process_excel_file(temp_path)
-        
+        # Обрабатываем файл в отдельном потоке чтобы не блокировать event loop
+        loop = asyncio.get_event_loop()
+        result = await loop.run_in_executor(
+            _excel_executor,
+            UserService.process_excel_file,
+            temp_path
+        )
+
         # Удаляем временный файл
         os.unlink(temp_path)
         

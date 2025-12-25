@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh repo create:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(git push:*)",
+      "Bash(cat:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(docker compose:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
