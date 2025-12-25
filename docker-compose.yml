@@ -38,10 +38,10 @@ services:
       WORK_END_HOUR: ${WORK_END_HOUR}
       ALLOW_ADMIN_DESKTOP: ${ALLOW_ADMIN_DESKTOP:-true}
 
-      # Load Testing (временно для тестирования, потом убрать!)
-      DISABLE_RATE_LIMIT: "true"
-      DB_POOL_MIN: "10"
-      DB_POOL_MAX: "150"
+      # Load Testing (включить при тестировании: DISABLE_RATE_LIMIT=true)
+      # DISABLE_RATE_LIMIT: "false"
+      DB_POOL_MIN: "5"
+      DB_POOL_MAX: "50"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.istra-geo-bot.entrypoints=websecure"
