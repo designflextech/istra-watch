@@ -127,14 +127,21 @@ async def serve_safe_area_test(request: web.Request) -> web.Response:
 async def on_startup(app: web.Application):
     """
     Действия при запуске сервера
-    
+
     Args:
         app: Приложение aiohttp
     """
+    import os
+
     # Инициализируем пул соединений с БД
-    # Увеличен maxconn для поддержки 50-200 пользователей
-    logger.info("Initializing database connection pool...")
-    init_connection_pool(minconn=5, maxconn=50)
+    # Настраивается через переменные окружения для нагрузочного тестирования:
+    # DB_POOL_MIN=5 (по умолчанию)
+    # DB_POOL_MAX=50 (по умолчанию, увеличить до 100-200 для 2000 юзеров)
+    db_pool_min = int(os.getenv('DB_POOL_MIN', '5'))
+    db_pool_max = int(os.getenv('DB_POOL_MAX', '50'))
+
+    logger.info(f"Initializing database connection pool: {db_pool_min}-{db_pool_max} connections...")
+    init_connection_pool(minconn=db_pool_min, maxconn=db_pool_max)
     
     # Автоматически применяем миграции при запуске
     # Это обеспечивает автоматическую инициализацию БД:

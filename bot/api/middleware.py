@@ -1,13 +1,29 @@
 """Middleware для API"""
 import asyncio
 import logging
+import os
 import time
 from collections import defaultdict
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Set
 from aiohttp import web
 from bot.utils.telegram_auth import validate_telegram_webapp_data
 
 logger = logging.getLogger(__name__)
+
+# === LOAD TESTING CONFIG ===
+# Отключить rate limiting полностью (для нагрузочного тестирования)
+# Установить DISABLE_RATE_LIMIT=true в .env
+DISABLE_RATE_LIMIT = os.getenv('DISABLE_RATE_LIMIT', 'false').lower() == 'true'
+
+# IP адреса, освобожденные от rate limiting (whitelist для тестирования)
+# Формат: RATE_LIMIT_WHITELIST=192.168.1.1,10.0.0.1
+_whitelist_raw = os.getenv('RATE_LIMIT_WHITELIST', '')
+RATE_LIMIT_WHITELIST: Set[str] = set(ip.strip() for ip in _whitelist_raw.split(',') if ip.strip())
+
+if DISABLE_RATE_LIMIT:
+    logger.warning("⚠️  RATE LIMITING IS DISABLED - only for testing!")
+if RATE_LIMIT_WHITELIST:
+    logger.info(f"Rate limit whitelist: {RATE_LIMIT_WHITELIST}")
 
 
 # Хранилище для rate limiting (в памяти)
@@ -89,6 +105,10 @@ async def rate_limit_middleware(request: web.Request, handler):
 
     Лимит: 200 единиц стоимости в минуту с одного IP
     Дорогие операции (PDF отчеты) стоят больше единиц
+
+    Для нагрузочного тестирования:
+    - DISABLE_RATE_LIMIT=true - отключить полностью
+    - RATE_LIMIT_WHITELIST=ip1,ip2 - whitelist IP адресов
     """
     # Пропускаем для не-API роутов
     if not request.path.startswith('/api/'):
@@ -99,6 +119,12 @@ async def rate_limit_middleware(request: web.Request, handler):
          request.headers.get('X-Forwarded-For', '').split(',')[0] or \
          request.remote or \
          'unknown'
+
+    # Проверяем: отключен ли rate limit или IP в whitelist
+    if DISABLE_RATE_LIMIT or ip in RATE_LIMIT_WHITELIST:
+        response = await handler(request)
+        response.headers['X-RateLimit-Bypass'] = 'true'
+        return response
 
     # Определяем стоимость запроса по endpoint
     # Ищем совпадение по началу пути (для динамических путей типа /api/records/123)
