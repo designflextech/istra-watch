@@ -8,8 +8,45 @@ export class TelegramSDK {
         this.initDataRaw = '';
         this.initDataParsed = null;
         this.tg = null;
-        
+        this._initAttempts = 0;
+
         this.init();
+    }
+
+    /**
+     * Ожидание инициализации SDK с повторными попытками
+     * Полезно для устройств где SDK загружается медленно (например Xiaomi)
+     * @param {number} maxAttempts - максимум попыток (по умолчанию 15)
+     * @param {number} delay - задержка между попытками в мс (по умолчанию 200)
+     * @returns {Promise<boolean>} - true если SDK инициализирован
+     */
+    async waitForInitData(maxAttempts = 15, delay = 200) {
+        console.log('=== Waiting for Telegram SDK initialization ===');
+
+        for (let attempt = 0; attempt < maxAttempts; attempt++) {
+            // Если уже есть данные - успех
+            if (this.initDataRaw && this.initDataRaw.length > 0) {
+                console.log(`✅ SDK initialized successfully on attempt ${attempt + 1}`);
+                return true;
+            }
+
+            // Пробуем переинициализировать
+            console.log(`⏳ Attempt ${attempt + 1}/${maxAttempts}: checking SDK...`);
+            this._initAttempts++;
+            this.init();
+
+            // Проверяем после инициализации
+            if (this.initDataRaw && this.initDataRaw.length > 0) {
+                console.log(`✅ SDK initialized successfully on attempt ${attempt + 1}`);
+                return true;
+            }
+
+            // Ждём перед следующей попыткой
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+
+        console.error(`❌ SDK initialization failed after ${maxAttempts} attempts`);
+        return false;
     }
     
     /**

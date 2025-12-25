@@ -58,15 +58,21 @@ class App {
                 safeAreaDebugger.logSafeAreaInfo();
                 safeAreaDebugger.validateSafeArea();
             }, 1000);
-            
+
+            // Ждём инициализации Telegram SDK (до 3 секунд)
+            // Это помогает на устройствах где SDK загружается медленно (Xiaomi, старые Android)
+            const sdkReady = await telegramSDK.waitForInitData(15, 200);
+
             const telegramUser = telegramSDK.getUser();
             console.log('telegramUser:', telegramUser);
+            console.log('sdkReady:', sdkReady);
             debugLog('Telegram user data', telegramUser);
-            
+
             if (!telegramUser || !telegramSDK.initDataRaw) {
                 const errorDetails = [];
                 if (!telegramUser) errorDetails.push('Отсутствуют данные пользователя Telegram');
                 if (!telegramSDK.initDataRaw) errorDetails.push('Отсутствует initDataRaw');
+                errorDetails.push(`SDK attempts: ${telegramSDK._initAttempts}`);
 
                 console.error('Initialization failed:', errorDetails);
                 this.showTelegramErrorMessage();
